@@ -11,6 +11,8 @@ collections:
 
   - name: cisco.ios
 
+  - name: community.general
+
   - name: https://github.com/redhat-cop/network.backup
     type: git
 

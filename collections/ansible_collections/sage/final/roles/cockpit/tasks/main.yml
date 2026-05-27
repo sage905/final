@@ -1,0 +1,42 @@
+---
+- name: Assert that the target host is Ubuntu
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Ubuntu'
+    fail_msg: >-
+      The sage.final.cockpit role only supports Ubuntu. Detected
+      distribution: {{ ansible_facts['distribution'] | default('unknown') }}.
+
+- name: Refresh the apt package cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install Cockpit from the distribution release pocket
+  ansible.builtin.apt:
+    name: "{{ cockpit_packages }}"
+    state: present
+  when: not cockpit_use_backports
+  notify: Restart cockpit
+
+- name: Install Cockpit from the {{ ansible_facts['distribution_release'] }}-backports pocket
+  ansible.builtin.apt:
+    name: "{{ cockpit_packages }}"
+    state: present
+    default_release: "{{ ansible_facts['distribution_release'] }}-backports"
+  when: cockpit_use_backports
+  notify: Restart cockpit
+
+- name: Enable and start the Cockpit socket
+  ansible.builtin.systemd:
+    name: "{{ cockpit_service }}"
+    enabled: true
+    state: started
+
+- name: Allow Cockpit through UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ cockpit_port }}"
+    proto: tcp
+    comment: Cockpit web UI
+  when: cockpit_manage_firewall

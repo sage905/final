@@ -1,0 +1,32 @@
+---
+argument_specs:
+  main:
+    short_description: Install and enable Cockpit on Ubuntu.
+    options:
+      cockpit_packages:
+        type: list
+        elements: str
+        required: false
+        default:
+          - cockpit
+        description: APT packages to install. Add Cockpit modules as desired.
+      cockpit_use_backports:
+        type: bool
+        required: false
+        default: true
+        description: Install from `<release>-backports` to pick up newer Cockpit builds.
+      cockpit_service:
+        type: str
+        required: false
+        default: cockpit.socket
+        description: Systemd unit to enable. Cockpit is socket-activated.
+      cockpit_manage_firewall:
+        type: bool
+        required: false
+        default: true
+        description: Whether to add a UFW allow rule for the Cockpit port.
+      cockpit_port:
+        type: int
+        required: false
+        default: 9090
+        description: TCP port Cockpit listens on.

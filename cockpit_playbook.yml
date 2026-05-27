@@ -1,0 +1,14 @@
+---
+# Install Cockpit on Ubuntu hosts.
+#
+# Run with ansible-navigator:
+#   ansible-navigator run cockpit_playbook.yml \
+#     --eei ee-demo \
+#     -i inventory/hosts.yml \
+#     --limit web_servers
+- name: Install Cockpit on Ubuntu
+  hosts: ubuntu
+  become: true
+  gather_facts: true
+  roles:
+    - role: sage.final.cockpit

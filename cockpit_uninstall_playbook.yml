@@ -1,0 +1,32 @@
+---
+# Uninstall Cockpit and remove its firewall rule.
+- name: Uninstall Cockpit on Ubuntu
+  hosts: ubuntu
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Assert that the target host is Ubuntu
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Ubuntu'
+
+    - name: Stop and disable the Cockpit socket
+      ansible.builtin.systemd:
+        name: cockpit.socket
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    - name: Remove Cockpit packages
+      ansible.builtin.apt:
+        name: "cockpit*"
+        state: absent
+        purge: true
+        autoremove: true
+
+    - name: Remove the Cockpit UFW rule
+      community.general.ufw:
+        rule: allow
+        port: "9090"
+        proto: tcp
+        delete: true
