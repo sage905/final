@@ -1,0 +1,18 @@
+---
+# Packages to install. The base `cockpit` metapackage pulls in the web UI,
+# bridge, and recommended plugins. Override to add modules like
+# `cockpit-podman`, `cockpit-machines`, `cockpit-networkmanager`, etc.
+cockpit_packages:
+  - cockpit
+
+# Whether to install from the `-backports` pocket on Ubuntu. Upstream
+# recommends this on 22.04 and newer to get current Cockpit releases.
+cockpit_use_backports: true
+
+# The systemd unit Cockpit ships is socket-activated.
+cockpit_service: cockpit.socket
+
+# Manage the UFW rule for the Cockpit web UI (port 9090/tcp).
+# Set to false on hosts where firewall rules are managed elsewhere.
+cockpit_manage_firewall: true
+cockpit_port: 9090
