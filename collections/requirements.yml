@@ -13,6 +13,8 @@ collections:
 
   - name: community.general
 
+  - name: community.docker
+
   - name: https://github.com/redhat-cop/network.backup
     type: git
 

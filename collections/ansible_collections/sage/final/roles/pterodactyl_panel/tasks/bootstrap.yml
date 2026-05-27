@@ -1,0 +1,48 @@
+---
+- name: Bring the Pterodactyl stack up
+  community.docker.docker_compose_v2:
+    project_src: "{{ ptero_data_dir }}"
+    state: present
+    pull: missing
+    remove_orphans: true
+  register: ptero_compose_result
+
+- name: Wait for the panel container to accept HTTP
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:8080/"
+    status_code: [200, 302]
+  register: ptero_panel_health
+  retries: 30
+  delay: 5
+  until: ptero_panel_health.status in [200, 302]
+
+- name: Check whether the bootstrap admin user already exists
+  when:
+    - ptero_admin_username | length > 0
+    - ptero_admin_password | length > 0
+  block:
+    - name: Look up the bootstrap admin user
+      community.docker.docker_container_exec:
+        container: pterodactyl-panel
+        command: >-
+          php artisan tinker --execute=
+          "echo \Pterodactyl\Models\User::where('username','{{ ptero_admin_username }}')->exists() ? 'yes' : 'no';"
+        chdir: /app
+      register: ptero_admin_check
+      changed_when: false
+      failed_when: false
+
+    - name: Create the bootstrap admin user
+      community.docker.docker_container_exec:
+        container: pterodactyl-panel
+        command: >-
+          php artisan p:user:make
+          --email={{ ptero_admin_email }}
+          --username={{ ptero_admin_username }}
+          --name-first={{ ptero_admin_first_name }}
+          --name-last={{ ptero_admin_last_name }}
+          --password={{ ptero_admin_password }}
+          --admin=1
+        chdir: /app
+      when: ptero_admin_check.stdout is not search('yes')
+      no_log: true

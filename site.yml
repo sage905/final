@@ -1,5 +1,28 @@
 ---
-- name: Example playbook
-  hosts: localhost
+# Top-level orchestrator. Run all plays with:
+#   ansible-navigator run site.yml --eei ee-demo -i inventory/hosts.yml
+# Or limit to one:
+#   ansible-navigator run site.yml --tags cockpit
+#   ansible-navigator run site.yml --tags pterodactyl
+- name: Configure Server
+  hosts: coserver
   roles:
     - role: sage.final.run
+
+- name: Install Cockpit
+  hosts: coserver
+  become: true
+  gather_facts: true
+  tags:
+    - cockpit
+  roles:
+    - role: sage.final.cockpit
+
+- name: Deploy Pterodactyl Panel
+  hosts: pterodactyl_panel
+  become: true
+  gather_facts: true
+  tags:
+    - pterodactyl
+  roles:
+    - role: sage.final.pterodactyl_panel

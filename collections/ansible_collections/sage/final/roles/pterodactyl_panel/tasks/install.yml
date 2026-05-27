@@ -1,0 +1,73 @@
+---
+- name: Create the compose project directory tree
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - "{{ ptero_data_dir }}"
+    - "{{ ptero_data_dir }}/secrets"
+    - "{{ ptero_data_dir }}/var"
+    - "{{ ptero_data_dir }}/nginx"
+    - "{{ ptero_data_dir }}/logs"
+    - "{{ ptero_data_dir }}/database"
+    - "{{ ptero_data_dir }}/caddy"
+    - "{{ ptero_data_dir }}/caddy/data"
+    - "{{ ptero_data_dir }}/caddy/config"
+
+- name: Generate persistent secrets when not supplied
+  ansible.builtin.include_tasks: _generate_secret.yml
+  loop:
+    - name: app_key
+      override: ""
+      prefix: "base64:"
+      length: 32
+    - name: db_password
+      override: "{{ ptero_db_password }}"
+      prefix: ""
+      length: 24
+    - name: db_root_password
+      override: "{{ ptero_db_root_password }}"
+      prefix: ""
+      length: 24
+  loop_control:
+    loop_var: secret
+
+- name: Resolve effective secrets
+  ansible.builtin.set_fact:
+    ptero_effective_app_key: "{{ lookup('ansible.builtin.file', ptero_data_dir ~ '/secrets/app_key') | trim }}"
+    ptero_effective_db_password: "{{ ptero_db_password
+                                     if ptero_db_password | length > 0
+                                     else lookup('ansible.builtin.file', ptero_data_dir ~ '/secrets/db_password') | trim }}"
+    ptero_effective_db_root_password: "{{ ptero_db_root_password
+                                          if ptero_db_root_password | length > 0
+                                          else lookup('ansible.builtin.file', ptero_data_dir ~ '/secrets/db_root_password') | trim }}"
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ ptero_data_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Recreate pterodactyl stack
+
+- name: Render panel environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ ptero_data_dir }}/.env"
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Recreate pterodactyl stack
+
+- name: Render Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: "{{ ptero_data_dir }}/caddy/Caddyfile"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload caddy
