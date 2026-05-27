@@ -1,0 +1,10 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart wings
+  ansible.builtin.systemd:
+    name: wings
+    state: restarted
+  when: pterodactyl_wings_config_stat.stat.exists | default(false)

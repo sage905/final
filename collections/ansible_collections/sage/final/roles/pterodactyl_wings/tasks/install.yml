@@ -1,0 +1,43 @@
+---
+- name: Create Wings directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - {path: "{{ pterodactyl_wings_config_dir }}", mode: "0700"}
+    - {path: "{{ pterodactyl_wings_data_dir }}", mode: "0700"}
+    - {path: "{{ pterodactyl_wings_log_dir }}", mode: "0700"}
+
+- name: Resolve Wings download URL
+  ansible.builtin.set_fact:
+    pterodactyl_wings_download_url: >-
+      {%- set arch = pterodactyl_wings_arch_map[ansible_facts['architecture']] -%}
+      {%- if pterodactyl_wings_version == 'latest' -%}
+      https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_{{ arch }}
+      {%- else -%}
+      https://github.com/pterodactyl/wings/releases/download/v{{ pterodactyl_wings_version }}/wings_linux_{{ arch }}
+      {%- endif -%}
+
+- name: Download the Wings binary
+  ansible.builtin.get_url:
+    url: "{{ pterodactyl_wings_download_url }}"
+    dest: "{{ pterodactyl_wings_binary_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+    force: "{{ pterodactyl_wings_version != 'latest' }}"
+  notify: Restart wings
+
+- name: Install the Wings systemd unit
+  ansible.builtin.template:
+    src: wings.service.j2
+    dest: /etc/systemd/system/wings.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart wings

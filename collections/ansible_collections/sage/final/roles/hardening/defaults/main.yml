@@ -1,0 +1,113 @@
+---
+# --- Section toggles ----------------------------------------------------------
+# Set any of these to false to skip that section entirely.
+hardening_ssh_enabled: true
+hardening_firewall_enabled: true
+hardening_fail2ban_enabled: true
+hardening_unattended_upgrades_enabled: true
+hardening_sysctl_enabled: true
+hardening_containers_user_enabled: true
+
+# --- Rootless containers user -------------------------------------------------
+# Creates a single non-root user that owns every podman-compose stack
+# deployed by the sage.final.* application roles. Enables systemd linger so
+# the user's containers survive reboots without an active login session.
+# Lowers net.ipv4.ip_unprivileged_port_start so the user can bind 80/443.
+hardening_containers_user: containers
+hardening_containers_unprivileged_port_start: 80
+
+# --- SSH hardening ------------------------------------------------------------
+# Settings are written to /etc/ssh/sshd_config.d/99-hardening.conf as a
+# drop-in; the package's main sshd_config is untouched. To revert, delete
+# the drop-in and reload sshd.
+#
+# permit_root_login=prohibit-password keeps key-based root login working
+# (Ansible connects as root@... in this project) while denying passwords.
+# Tighten to "no" once you have a non-root admin user with sudo.
+hardening_ssh_password_authentication: "no"
+hardening_ssh_permit_root_login: prohibit-password
+hardening_ssh_pubkey_authentication: "yes"
+hardening_ssh_max_auth_tries: 3
+hardening_ssh_login_grace_time: 30
+hardening_ssh_client_alive_interval: 300
+hardening_ssh_client_alive_count_max: 2
+hardening_ssh_x11_forwarding: "no"
+hardening_ssh_permit_empty_passwords: "no"
+hardening_ssh_use_pam: "yes"
+
+# --- UFW firewall -------------------------------------------------------------
+# Default-deny incoming, default-allow outgoing. SSH is always allowed before
+# the policy flips, regardless of the list below, to prevent lockout.
+hardening_firewall_default_incoming: deny
+hardening_firewall_default_outgoing: allow
+hardening_firewall_default_routed: deny
+
+# Ports the host listens on. Override or extend in inventory.
+hardening_firewall_allowed_tcp:
+  - {port: 22, comment: SSH}
+  - {port: 80, comment: HTTP (Caddy)}
+  - {port: 443, comment: HTTPS (Caddy)}
+  - {port: 2022, comment: Pterodactyl Wings SFTP}
+  - {port: 9090, comment: Cockpit}
+  - {port: 25565, comment: Minecraft Java}
+hardening_firewall_allowed_udp:
+  - {port: 19132, comment: Minecraft Bedrock}
+
+# Open additional ports without overriding the defaults above. Same item shape.
+hardening_firewall_extra_tcp: []
+hardening_firewall_extra_udp: []
+
+# Rate-limit SSH connections (UFW `limit` rule). Drops connections from any
+# single IP that opens more than 6 in 30 seconds.
+hardening_firewall_limit_ssh: true
+
+# --- fail2ban -----------------------------------------------------------------
+hardening_fail2ban_bantime: 1h
+hardening_fail2ban_findtime: 10m
+hardening_fail2ban_maxretry: 5
+hardening_fail2ban_backend: systemd
+# Networks that should never be banned (e.g. bastions, monitoring, your IP).
+hardening_fail2ban_ignoreip:
+  - 127.0.0.1/8
+  - ::1
+hardening_fail2ban_extra_ignoreip: []
+
+# Additional jails. Each entry is rendered verbatim into jail.local. Useful
+# for enabling cockpit, nginx, caddy filters etc. once you have logs flowing.
+hardening_fail2ban_extra_jails: []
+
+# --- Unattended upgrades ------------------------------------------------------
+# When true, installs unattended-upgrades and enables the default Ubuntu
+# security-updates schedule. Does not enable automatic reboots.
+hardening_unattended_upgrades_automatic_reboot: false
+
+# --- sysctl -------------------------------------------------------------------
+# Kernel-level hardening written to /etc/sysctl.d/99-hardening.conf.
+hardening_sysctl_settings:
+  # Block source-routed packets
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.default.accept_source_route: 0
+  net.ipv6.conf.all.accept_source_route: 0
+  net.ipv6.conf.default.accept_source_route: 0
+  # Reverse-path filtering (drops spoofed packets)
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.default.rp_filter: 1
+  # Ignore ICMP broadcast and bogus error responses
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  net.ipv4.icmp_ignore_bogus_error_responses: 1
+  # Log spoofed/source-routed/redirect packets
+  net.ipv4.conf.all.log_martians: 1
+  # SYN flood protection
+  net.ipv4.tcp_syncookies: 1
+  # Reject ICMP redirects
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv6.conf.default.accept_redirects: 0
+  # Restrict kernel info leaks
+  kernel.kptr_restrict: 2
+  kernel.dmesg_restrict: 1
+  # Restrict ptrace to direct children
+  kernel.yama.ptrace_scope: 1

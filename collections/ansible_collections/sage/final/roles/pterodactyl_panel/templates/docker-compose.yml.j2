@@ -4,61 +4,44 @@ name: pterodactyl
 
 services:
   database:
-    image: {{ ptero_db_image }}
+    image: {{ pterodactyl_panel_db_image }}
     container_name: pterodactyl-database
     restart: always
     command: --default-authentication-plugin=mysql_native_password
     volumes:
-      - "{{ ptero_data_dir }}/database:/var/lib/mysql"
+      - "{{ pterodactyl_panel_data_dir }}/database:/var/lib/mysql"
     environment:
-      MYSQL_DATABASE: "{{ ptero_db_name }}"
-      MYSQL_USER: "{{ ptero_db_user }}"
-      MYSQL_PASSWORD: "{{ ptero_effective_db_password }}"
-      MYSQL_ROOT_PASSWORD: "{{ ptero_effective_db_root_password }}"
+      MYSQL_DATABASE: "{{ pterodactyl_panel_db_name }}"
+      MYSQL_USER: "{{ pterodactyl_panel_db_user }}"
+      MYSQL_PASSWORD: "{{ pterodactyl_panel_effective_db_password }}"
+      MYSQL_ROOT_PASSWORD: "{{ pterodactyl_panel_effective_db_root_password }}"
     networks:
-      - pterodactyl
+      - shared
 
   cache:
-    image: {{ ptero_cache_image }}
+    image: {{ pterodactyl_panel_cache_image }}
     container_name: pterodactyl-cache
     restart: always
     networks:
-      - pterodactyl
+      - shared
 
   panel:
-    image: {{ ptero_panel_image }}
+    image: {{ pterodactyl_panel_image }}
     container_name: pterodactyl-panel
     restart: always
-    ports:
-      - "127.0.0.1:8080:80"
     depends_on:
       - database
       - cache
     env_file:
       - .env
     volumes:
-      - "{{ ptero_data_dir }}/var:/app/var"
-      - "{{ ptero_data_dir }}/nginx:/etc/nginx/http.d"
-      - "{{ ptero_data_dir }}/logs:/app/storage/logs"
+      - "{{ pterodactyl_panel_data_dir }}/var:/app/var"
+      - "{{ pterodactyl_panel_data_dir }}/nginx:/etc/nginx/http.d"
+      - "{{ pterodactyl_panel_data_dir }}/logs:/app/storage/logs"
     networks:
-      - pterodactyl
-
-  caddy:
-    image: {{ ptero_caddy_image }}
-    container_name: pterodactyl-caddy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - panel
-    volumes:
-      - "{{ ptero_data_dir }}/caddy/Caddyfile:/etc/caddy/Caddyfile:ro"
-      - "{{ ptero_data_dir }}/caddy/data:/data"
-      - "{{ ptero_data_dir }}/caddy/config:/config"
-    networks:
-      - pterodactyl
+      - shared
 
 networks:
-  pterodactyl:
-    name: pterodactyl
+  shared:
+    name: {{ pterodactyl_panel_shared_network }}
+    external: true

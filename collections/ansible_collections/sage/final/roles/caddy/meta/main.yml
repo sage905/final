@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: caddy
+  namespace: sage
+  author: Sage
+  description: Run Caddy as the shared reverse proxy backends drop vhost snippets into.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - caddy
+    - proxy
+    - tls
+    - podman
+dependencies: []

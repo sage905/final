@@ -1,0 +1,18 @@
+---
+# {{ ansible_managed }}
+name: glance
+
+services:
+  glance:
+    image: {{ glance_image }}
+    container_name: glance
+    restart: always
+    volumes:
+      - "{{ glance_data_dir }}/config:/app/config"
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ glance_shared_network }}
+    external: true

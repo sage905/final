@@ -1,0 +1,45 @@
+---
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# Always allow SSH BEFORE flipping the default policy, otherwise enabling
+# UFW would drop the running session.
+- name: Allow SSH through UFW (pre-policy)
+  community.general.ufw:
+    rule: "{{ 'limit' if hardening_firewall_limit_ssh else 'allow' }}"
+    port: "22"
+    proto: tcp
+    comment: "SSH (pre-policy)"
+
+- name: Set UFW default policies
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - {direction: incoming, policy: "{{ hardening_firewall_default_incoming }}"}
+    - {direction: outgoing, policy: "{{ hardening_firewall_default_outgoing }}"}
+    - {direction: routed, policy: "{{ hardening_firewall_default_routed }}"}
+
+- name: Allow configured TCP ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: tcp
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ hardening_firewall_allowed_tcp + hardening_firewall_extra_tcp }}"
+
+- name: Allow configured UDP ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: udp
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ hardening_firewall_allowed_udp + hardening_firewall_extra_udp }}"
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled

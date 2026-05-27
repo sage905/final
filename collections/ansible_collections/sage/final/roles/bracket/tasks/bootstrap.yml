@@ -1,0 +1,24 @@
+---
+- name: Bring up the Bracket stack as {{ bracket_user }}
+  become: true
+  become_user: "{{ bracket_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[bracket_user][1] }}"
+  block:
+    - name: Ensure the shared Podman network exists
+      ansible.builtin.command:
+        cmd: "podman network create {{ bracket_shared_network }}"
+      register: bracket_network_result
+      changed_when: bracket_network_result.rc == 0
+      failed_when:
+        - bracket_network_result.rc != 0
+        - "'already exists' not in bracket_network_result.stderr"
+
+    - name: Bring up the Bracket stack
+      ansible.builtin.command:
+        cmd: podman-compose up -d --remove-orphans
+        chdir: "{{ bracket_data_dir }}"
+      register: bracket_compose_result
+      changed_when: "'Creating' in bracket_compose_result.stdout
+                     or 'Recreating' in bracket_compose_result.stdout
+                     or 'Started' in bracket_compose_result.stderr"

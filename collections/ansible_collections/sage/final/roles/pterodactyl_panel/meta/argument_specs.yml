@@ -1,88 +1,106 @@
 ---
 argument_specs:
   main:
-    short_description: Deploy the Pterodactyl Panel as a Docker Compose stack.
+    short_description: Deploy the Pterodactyl Panel as a backend behind shared Caddy.
     options:
-      ptero_data_dir:
+      pterodactyl_panel_data_dir:
         type: path
         default: /srv/pterodactyl
         description: Host directory holding compose project, secrets, and volumes.
-      ptero_panel_image:
-        type: str
-        default: ghcr.io/pterodactyl/panel:latest
-      ptero_panel_fqdn:
+      pterodactyl_panel_fqdn:
         type: str
         required: true
-        description: Public hostname that Caddy will obtain a certificate for.
-      ptero_admin_email:
+        description: Hostname Caddy obtains a certificate for and serves the panel on.
+      pterodactyl_panel_wings_fqdn:
+        type: str
+        default: ""
+        description: Hostname Caddy serves the Wings UI on. Leave empty to skip the wings vhost.
+      pterodactyl_panel_wings_backend:
+        type: str
+        default: "http://host.containers.internal:8080"
+        description: Upstream URL Caddy proxies the wings vhost to.
+      pterodactyl_panel_image:
+        type: str
+        default: ghcr.io/blueprintframework/blueprint:latest
+        description: Panel image. Default bundles Pterodactyl + Blueprint Framework.
+      pterodactyl_panel_admin_email:
         type: str
         required: true
-        description: ACME registration address and default panel service author.
-      ptero_timezone:
+        description: Default panel service author email.
+      pterodactyl_panel_timezone:
         type: str
         default: UTC
-      ptero_db_image:
+      pterodactyl_panel_db_image:
         type: str
-        default: mariadb:10.11
-      ptero_db_name:
+        default: docker.io/library/mariadb:10.11
+      pterodactyl_panel_db_name:
         type: str
         default: panel
-      ptero_db_user:
+      pterodactyl_panel_db_user:
         type: str
         default: pterodactyl
-      ptero_db_password:
+      pterodactyl_panel_db_password:
         type: str
         default: ""
         no_log: true
         description: Override the auto-generated DB password.
-      ptero_db_root_password:
+      pterodactyl_panel_db_root_password:
         type: str
         default: ""
         no_log: true
-      ptero_cache_image:
+      pterodactyl_panel_cache_image:
         type: str
-        default: redis:7-alpine
-      ptero_caddy_image:
+        default: docker.io/library/redis:7-alpine
+      pterodactyl_panel_caddy_conf_d_dir:
+        type: path
+        default: /srv/caddy/conf.d
+      pterodactyl_panel_caddy_container:
         type: str
-        default: caddy:2-alpine
-      ptero_mail_driver:
+        default: caddy
+      pterodactyl_panel_shared_network:
+        type: str
+        default: web
+      pterodactyl_panel_mail_driver:
         type: str
         default: log
         choices: [log, smtp, mail, mailgun, ses]
-      ptero_mail_host:
+      pterodactyl_panel_mail_host:
         type: str
         default: ""
-      ptero_mail_port:
+      pterodactyl_panel_mail_port:
         type: int
         default: 587
-      ptero_mail_username:
+      pterodactyl_panel_mail_username:
         type: str
         default: ""
-      ptero_mail_password:
+      pterodactyl_panel_mail_password:
         type: str
         default: ""
         no_log: true
-      ptero_mail_encryption:
+      pterodactyl_panel_mail_encryption:
         type: str
         default: tls
         choices: [tls, ssl, ""]
-      ptero_mail_from:
+      pterodactyl_panel_mail_from:
         type: str
         default: ""
-      ptero_admin_username:
+      pterodactyl_panel_admin_username:
         type: str
         default: ""
         description: Create this admin user on first boot when set with a password.
-      ptero_admin_password:
+      pterodactyl_panel_admin_password:
         type: str
         default: ""
         no_log: true
-      ptero_admin_first_name:
+      pterodactyl_panel_admin_first_name:
         type: str
         default: Panel
-      ptero_admin_last_name:
+      pterodactyl_panel_admin_last_name:
         type: str
         default: Admin
-      ptero_install_docker:
+      pterodactyl_panel_install_podman:
         type: bool
         default: true
+      pterodactyl_panel_user:
+        type: str
+        default: containers

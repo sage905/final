@@ -1,0 +1,16 @@
+---
+caddy_data_dir: /srv/caddy
+caddy_image: docker.io/library/caddy:2-alpine
+caddy_container: caddy
+
+# Email Caddy uses to register with the ACME provider. Required.
+caddy_admin_email: ""
+
+# External Podman network this role creates and that all backend roles join
+# (sage.final.pterodactyl_panel, .wordpress, .dashy, .glance, .bracket, .jellyfin).
+caddy_shared_network: web
+
+caddy_install_podman: true
+
+# Rootless: user that owns this role's data dir and runs podman-compose.
+caddy_user: containers

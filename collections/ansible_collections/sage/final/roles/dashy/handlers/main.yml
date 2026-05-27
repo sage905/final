@@ -1,0 +1,20 @@
+---
+- name: Recreate dashy stack
+  ansible.builtin.command:
+    cmd: podman-compose up -d --force-recreate
+    chdir: "{{ dashy_data_dir }}"
+  changed_when: true
+  become: true
+  become_user: "{{ dashy_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[dashy_user][1] }}"
+
+- name: Reload caddy
+  containers.podman.podman_container_exec:
+    name: "{{ dashy_caddy_container }}"
+    command: caddy reload --config /etc/caddy/Caddyfile
+  failed_when: false
+  become: true
+  become_user: "{{ dashy_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[dashy_user][1] }}"

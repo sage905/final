@@ -1,0 +1,38 @@
+---
+- name: Create Jellyfin directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ jellyfin_user }}"
+    group: "{{ jellyfin_user }}"
+    mode: "0755"
+  loop:
+    - "{{ jellyfin_data_dir }}"
+    - "{{ jellyfin_data_dir }}/config"
+    - "{{ jellyfin_data_dir }}/cache"
+
+- name: Ensure the media directory exists
+  ansible.builtin.file:
+    path: "{{ jellyfin_media_path }}"
+    state: directory
+    owner: "{{ jellyfin_user }}"
+    group: "{{ jellyfin_user }}"
+    mode: "0755"
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ jellyfin_data_dir }}/docker-compose.yml"
+    owner: "{{ jellyfin_user }}"
+    group: "{{ jellyfin_user }}"
+    mode: "0640"
+  notify: Recreate jellyfin stack
+
+- name: Drop the Caddy vhost snippet
+  ansible.builtin.template:
+    src: jellyfin.caddy.j2
+    dest: "{{ jellyfin_caddy_conf_d_dir }}/jellyfin.caddy"
+    owner: "{{ jellyfin_user }}"
+    group: "{{ jellyfin_user }}"
+    mode: "0644"
+  notify: Reload caddy

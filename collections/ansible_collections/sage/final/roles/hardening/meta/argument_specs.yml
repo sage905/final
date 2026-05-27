@@ -1,0 +1,132 @@
+---
+argument_specs:
+  main:
+    short_description: Reasonable host hardening (ssh, ufw, fail2ban, updates, sysctl).
+    options:
+      hardening_ssh_enabled:
+        type: bool
+        default: true
+      hardening_firewall_enabled:
+        type: bool
+        default: true
+      hardening_fail2ban_enabled:
+        type: bool
+        default: true
+      hardening_unattended_upgrades_enabled:
+        type: bool
+        default: true
+      hardening_sysctl_enabled:
+        type: bool
+        default: true
+      hardening_containers_user_enabled:
+        type: bool
+        default: true
+      hardening_containers_user:
+        type: str
+        default: containers
+      hardening_containers_unprivileged_port_start:
+        type: int
+        default: 80
+
+      # SSH
+      hardening_ssh_password_authentication:
+        type: str
+        default: "no"
+        choices: ["yes", "no"]
+      hardening_ssh_permit_root_login:
+        type: str
+        default: prohibit-password
+        choices: ["yes", "no", prohibit-password, forced-commands-only]
+      hardening_ssh_pubkey_authentication:
+        type: str
+        default: "yes"
+        choices: ["yes", "no"]
+      hardening_ssh_max_auth_tries:
+        type: int
+        default: 3
+      hardening_ssh_login_grace_time:
+        type: int
+        default: 30
+      hardening_ssh_client_alive_interval:
+        type: int
+        default: 300
+      hardening_ssh_client_alive_count_max:
+        type: int
+        default: 2
+      hardening_ssh_x11_forwarding:
+        type: str
+        default: "no"
+        choices: ["yes", "no"]
+      hardening_ssh_permit_empty_passwords:
+        type: str
+        default: "no"
+        choices: ["yes", "no"]
+      hardening_ssh_use_pam:
+        type: str
+        default: "yes"
+        choices: ["yes", "no"]
+
+      # Firewall
+      hardening_firewall_default_incoming:
+        type: str
+        default: deny
+        choices: [allow, deny, reject]
+      hardening_firewall_default_outgoing:
+        type: str
+        default: allow
+        choices: [allow, deny, reject]
+      hardening_firewall_default_routed:
+        type: str
+        default: deny
+        choices: [allow, deny, reject]
+      hardening_firewall_allowed_tcp:
+        type: list
+        elements: dict
+      hardening_firewall_allowed_udp:
+        type: list
+        elements: dict
+      hardening_firewall_extra_tcp:
+        type: list
+        elements: dict
+        default: []
+      hardening_firewall_extra_udp:
+        type: list
+        elements: dict
+        default: []
+      hardening_firewall_limit_ssh:
+        type: bool
+        default: true
+
+      # fail2ban
+      hardening_fail2ban_bantime:
+        type: str
+        default: 1h
+      hardening_fail2ban_findtime:
+        type: str
+        default: 10m
+      hardening_fail2ban_maxretry:
+        type: int
+        default: 5
+      hardening_fail2ban_backend:
+        type: str
+        default: systemd
+      hardening_fail2ban_ignoreip:
+        type: list
+        elements: str
+      hardening_fail2ban_extra_ignoreip:
+        type: list
+        elements: str
+        default: []
+      hardening_fail2ban_extra_jails:
+        type: list
+        elements: str
+        default: []
+
+      # Updates
+      hardening_unattended_upgrades_automatic_reboot:
+        type: bool
+        default: false
+
+      # Sysctl
+      hardening_sysctl_settings:
+        type: dict

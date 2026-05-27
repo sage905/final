@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[DEFAULT]
+bantime = {{ hardening_fail2ban_bantime }}
+findtime = {{ hardening_fail2ban_findtime }}
+maxretry = {{ hardening_fail2ban_maxretry }}
+backend = {{ hardening_fail2ban_backend }}
+ignoreip = {{ (hardening_fail2ban_ignoreip + hardening_fail2ban_extra_ignoreip) | join(' ') }}
+
+[sshd]
+enabled = true
+port = ssh
+{% for jail in hardening_fail2ban_extra_jails %}
+
+{{ jail }}
+{% endfor %}

@@ -1,48 +1,62 @@
 ---
-- name: Bring the Pterodactyl stack up
-  community.docker.docker_compose_v2:
-    project_src: "{{ ptero_data_dir }}"
-    state: present
-    pull: missing
-    remove_orphans: true
-  register: ptero_compose_result
-
-- name: Wait for the panel container to accept HTTP
-  ansible.builtin.uri:
-    url: "http://127.0.0.1:8080/"
-    status_code: [200, 302]
-  register: ptero_panel_health
-  retries: 30
-  delay: 5
-  until: ptero_panel_health.status in [200, 302]
-
-- name: Check whether the bootstrap admin user already exists
-  when:
-    - ptero_admin_username | length > 0
-    - ptero_admin_password | length > 0
+- name: Bring up Pterodactyl as {{ pterodactyl_panel_user }}
+  become: true
+  become_user: "{{ pterodactyl_panel_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[pterodactyl_panel_user][1] }}"
   block:
-    - name: Look up the bootstrap admin user
-      community.docker.docker_container_exec:
-        container: pterodactyl-panel
-        command: >-
-          php artisan tinker --execute=
-          "echo \Pterodactyl\Models\User::where('username','{{ ptero_admin_username }}')->exists() ? 'yes' : 'no';"
-        chdir: /app
-      register: ptero_admin_check
+    - name: Ensure the shared Podman network exists
+      ansible.builtin.command:
+        cmd: "podman network create {{ pterodactyl_panel_shared_network }}"
+      register: pterodactyl_panel_network_result
+      changed_when: pterodactyl_panel_network_result.rc == 0
+      failed_when:
+        - pterodactyl_panel_network_result.rc != 0
+        - "'already exists' not in pterodactyl_panel_network_result.stderr"
+
+    - name: Bring the Pterodactyl stack up
+      ansible.builtin.command:
+        cmd: podman-compose up -d --remove-orphans
+        chdir: "{{ pterodactyl_panel_data_dir }}"
+      register: pterodactyl_panel_compose_result
+      changed_when: "'Creating' in pterodactyl_panel_compose_result.stdout
+                     or 'Recreating' in pterodactyl_panel_compose_result.stdout
+                     or 'Started' in pterodactyl_panel_compose_result.stderr"
+
+    - name: Wait for the panel container to accept HTTP
+      ansible.builtin.command:
+        cmd: podman exec pterodactyl-panel curl -fsS -o /dev/null http://localhost:80/
+      register: pterodactyl_panel_health
+      retries: 30
+      delay: 5
+      until: pterodactyl_panel_health.rc == 0
       changed_when: false
-      failed_when: false
 
     - name: Create the bootstrap admin user
-      community.docker.docker_container_exec:
-        container: pterodactyl-panel
-        command: >-
-          php artisan p:user:make
-          --email={{ ptero_admin_email }}
-          --username={{ ptero_admin_username }}
-          --name-first={{ ptero_admin_first_name }}
-          --name-last={{ ptero_admin_last_name }}
-          --password={{ ptero_admin_password }}
-          --admin=1
-        chdir: /app
-      when: ptero_admin_check.stdout is not search('yes')
-      no_log: true
+      when:
+        - pterodactyl_panel_admin_username | length > 0
+        - pterodactyl_panel_admin_password | length > 0
+      block:
+        - name: Look up the bootstrap admin user
+          containers.podman.podman_container_exec:
+            name: pterodactyl-panel
+            command: >-
+              php artisan tinker --execute=
+              "echo \Pterodactyl\Models\User::where('username','{{ pterodactyl_panel_admin_username }}')->exists() ? 'yes' : 'no';"
+          register: pterodactyl_panel_admin_check
+          changed_when: false
+          failed_when: false
+
+        - name: Create the bootstrap admin user
+          containers.podman.podman_container_exec:
+            name: pterodactyl-panel
+            command: >-
+              php artisan p:user:make
+              --email={{ pterodactyl_panel_admin_email }}
+              --username={{ pterodactyl_panel_admin_username }}
+              --name-first={{ pterodactyl_panel_admin_first_name }}
+              --name-last={{ pterodactyl_panel_admin_last_name }}
+              --password={{ pterodactyl_panel_admin_password }}
+              --admin=1
+          when: pterodactyl_panel_admin_check.stdout is not search('yes')
+          no_log: true

@@ -1,0 +1,37 @@
+---
+argument_specs:
+  main:
+    short_description: Install the Pterodactyl Wings daemon.
+    options:
+      pterodactyl_wings_version:
+        type: str
+        default: latest
+        description: Release tag (without leading "v") or "latest".
+      pterodactyl_wings_binary_path:
+        type: path
+        default: /usr/local/bin/wings
+      pterodactyl_wings_arch_map:
+        type: dict
+        default:
+          x86_64: amd64
+          aarch64: arm64
+      pterodactyl_wings_config_dir:
+        type: path
+        default: /etc/pterodactyl
+      pterodactyl_wings_data_dir:
+        type: path
+        default: /var/lib/pterodactyl
+      pterodactyl_wings_log_dir:
+        type: path
+        default: /var/log/pterodactyl
+      pterodactyl_wings_config_yaml:
+        type: str
+        default: ""
+        description: Contents of /etc/pterodactyl/config.yml. Leave empty to paste from the Panel manually.
+      pterodactyl_wings_enable_swap_accounting:
+        type: bool
+        default: true
+        description: Adds swapaccount=1 to GRUB; reboot required for it to apply.
+      pterodactyl_wings_install_podman:
+        type: bool
+        default: true

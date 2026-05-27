@@ -1,0 +1,18 @@
+---
+# {{ ansible_managed }}
+name: dashy
+
+services:
+  dashy:
+    image: {{ dashy_image }}
+    container_name: dashy
+    restart: always
+    volumes:
+      - "{{ dashy_data_dir }}/user-data:/app/user-data"
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ dashy_shared_network }}
+    external: true

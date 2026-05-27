@@ -1,0 +1,45 @@
+---
+- name: Create Dashy directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ dashy_user }}"
+    group: "{{ dashy_user }}"
+    mode: "0755"
+  loop:
+    - "{{ dashy_data_dir }}"
+    - "{{ dashy_data_dir }}/user-data"
+
+- name: Seed an initial conf.yml when missing
+  ansible.builtin.copy:
+    dest: "{{ dashy_data_dir }}/user-data/conf.yml"
+    content: |
+      ---
+      appConfig: {}
+      pageInfo:
+        title: Dashy
+      sections: []
+    force: false
+    owner: "{{ dashy_user }}"
+    group: "{{ dashy_user }}"
+    mode: "0644"
+  when: dashy_seed_config
+  notify: Recreate dashy stack
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ dashy_data_dir }}/docker-compose.yml"
+    owner: "{{ dashy_user }}"
+    group: "{{ dashy_user }}"
+    mode: "0640"
+  notify: Recreate dashy stack
+
+- name: Drop the Caddy vhost snippet
+  ansible.builtin.template:
+    src: dashy.caddy.j2
+    dest: "{{ dashy_caddy_conf_d_dir }}/dashy.caddy"
+    owner: "{{ dashy_user }}"
+    group: "{{ dashy_user }}"
+    mode: "0644"
+  notify: Reload caddy

@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: bracket
+  namespace: sage
+  author: Sage
+  description: Run Bracket (tournament system) behind the panel role's shared Caddy.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - bracket
+    - tournament
+    - podman
+dependencies: []

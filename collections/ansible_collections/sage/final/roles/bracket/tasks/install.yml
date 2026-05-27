@@ -1,0 +1,55 @@
+---
+- name: Create Bracket directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ bracket_user }}"
+    group: "{{ bracket_user }}"
+    mode: "0750"
+  loop:
+    - "{{ bracket_data_dir }}"
+    - "{{ bracket_data_dir }}/secrets"
+    - "{{ bracket_data_dir }}/static"
+    - "{{ bracket_data_dir }}/postgres"
+
+- name: Generate the DB password if not supplied
+  ansible.builtin.include_tasks: _generate_secret.yml
+  loop:
+    - name: db_password
+      override: "{{ bracket_db_password }}"
+      length: 24
+  loop_control:
+    loop_var: secret
+
+# Secrets live on the target host (not the controller), so use `slurp`.
+- name: Slurp the DB password from the host
+  ansible.builtin.slurp:
+    src: "{{ bracket_data_dir }}/secrets/db_password"
+  register: bracket_db_password_slurp
+  no_log: true
+  when: bracket_db_password | length == 0
+
+- name: Resolve the effective DB password
+  ansible.builtin.set_fact:
+    bracket_effective_db_password: "{{ bracket_db_password
+                                       if bracket_db_password | length > 0
+                                       else bracket_db_password_slurp.content | b64decode | trim }}"
+  no_log: true
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ bracket_data_dir }}/docker-compose.yml"
+    owner: "{{ bracket_user }}"
+    group: "{{ bracket_user }}"
+    mode: "0640"
+  notify: Recreate bracket stack
+
+- name: Drop the Caddy vhost snippet
+  ansible.builtin.template:
+    src: bracket.caddy.j2
+    dest: "{{ bracket_caddy_conf_d_dir }}/bracket.caddy"
+    owner: "{{ bracket_user }}"
+    group: "{{ bracket_user }}"
+    mode: "0644"
+  notify: Reload caddy

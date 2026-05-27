@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: wordpress
+  namespace: sage
+  author: Sage
+  description: Run WordPress as a podman-compose stack behind the panel role's Caddy.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - wordpress
+    - podman
+    - compose
+dependencies: []

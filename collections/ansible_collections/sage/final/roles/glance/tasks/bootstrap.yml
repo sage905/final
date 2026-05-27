@@ -1,0 +1,24 @@
+---
+- name: Bring up the Glance stack as {{ glance_user }}
+  become: true
+  become_user: "{{ glance_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[glance_user][1] }}"
+  block:
+    - name: Ensure the shared Podman network exists
+      ansible.builtin.command:
+        cmd: "podman network create {{ glance_shared_network }}"
+      register: glance_network_result
+      changed_when: glance_network_result.rc == 0
+      failed_when:
+        - glance_network_result.rc != 0
+        - "'already exists' not in glance_network_result.stderr"
+
+    - name: Bring up the Glance stack
+      ansible.builtin.command:
+        cmd: podman-compose up -d --remove-orphans
+        chdir: "{{ glance_data_dir }}"
+      register: glance_compose_result
+      changed_when: "'Creating' in glance_compose_result.stdout
+                     or 'Recreating' in glance_compose_result.stdout
+                     or 'Started' in glance_compose_result.stderr"

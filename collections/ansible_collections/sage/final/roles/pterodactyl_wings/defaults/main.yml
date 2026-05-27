@@ -1,0 +1,36 @@
+---
+# --- Wings binary -------------------------------------------------------------
+# `latest` pulls https://github.com/pterodactyl/wings/releases/latest/download/...
+# Pin to a release tag (without the leading "v") for reproducible installs.
+pterodactyl_wings_version: latest
+
+pterodactyl_wings_binary_path: /usr/local/bin/wings
+
+# Architecture suffix on the Wings release asset names.
+pterodactyl_wings_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+
+# --- Filesystem layout --------------------------------------------------------
+pterodactyl_wings_config_dir: /etc/pterodactyl
+pterodactyl_wings_data_dir: /var/lib/pterodactyl
+pterodactyl_wings_log_dir: /var/log/pterodactyl
+
+# Optional: drop a Wings config.yml fetched from the Panel onto the host.
+# Provide the file contents (typically read with `lookup('file', ...)`) — when
+# empty the role installs the binary and unit but leaves config.yml to the
+# operator (paste from the Panel UI).
+pterodactyl_wings_config_yaml: ""
+
+# --- System tuning ------------------------------------------------------------
+# Wings needs cgroup swap accounting to enforce per-container memory+swap
+# limits. Adds `swapaccount=1` to GRUB_CMDLINE_LINUX_DEFAULT. Requires a reboot
+# to take effect.
+pterodactyl_wings_enable_swap_accounting: true
+
+# --- Container runtime install ------------------------------------------------
+# Set to false on hosts where Podman is already managed elsewhere. Wings is
+# pointed at Podman's Docker-compatible socket via DOCKER_HOST in the unit.
+# Upstream Wings has not blessed Podman as a runtime; this works because
+# podman.socket emulates the Docker API, but treat as best-effort.
+pterodactyl_wings_install_podman: true

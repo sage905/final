@@ -1,0 +1,40 @@
+---
+- name: Write Wings config.yml from supplied content
+  ansible.builtin.copy:
+    content: "{{ pterodactyl_wings_config_yaml }}"
+    dest: "{{ pterodactyl_wings_config_dir }}/config.yml"
+    owner: root
+    group: root
+    mode: "0600"
+  when: pterodactyl_wings_config_yaml | length > 0
+  notify: Restart wings
+
+- name: Detect whether Wings config.yml is present
+  ansible.builtin.stat:
+    path: "{{ pterodactyl_wings_config_dir }}/config.yml"
+  register: pterodactyl_wings_config_stat
+
+- name: Enable and start Wings
+  ansible.builtin.systemd:
+    name: wings
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: pterodactyl_wings_config_stat.stat.exists
+
+- name: Enable Wings (config not yet present — service will start on next run)
+  ansible.builtin.systemd:
+    name: wings
+    enabled: true
+    state: stopped
+    daemon_reload: true
+  when: not pterodactyl_wings_config_stat.stat.exists
+
+- name: Remind operator to register this node with the Panel
+  ansible.builtin.debug:
+    msg: >-
+      Wings is installed but {{ pterodactyl_wings_config_dir }}/config.yml is missing.
+      Register this node in the Panel UI (Admin → Nodes → Create) and copy
+      the generated config.yml to {{ pterodactyl_wings_config_dir }}/config.yml, then
+      `systemctl start wings`.
+  when: not pterodactyl_wings_config_stat.stat.exists

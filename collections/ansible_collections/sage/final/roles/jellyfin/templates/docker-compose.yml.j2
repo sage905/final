@@ -1,0 +1,26 @@
+---
+# {{ ansible_managed }}
+name: jellyfin
+
+services:
+  jellyfin:
+    image: {{ jellyfin_image }}
+    container_name: jellyfin
+    restart: always
+    environment:
+      JELLYFIN_PublishedServerUrl: "https://{{ jellyfin_fqdn }}"
+    volumes:
+      - "{{ jellyfin_data_dir }}/config:/config"
+      - "{{ jellyfin_data_dir }}/cache:/cache"
+      - "{{ jellyfin_media_path }}:/media"
+{% if jellyfin_publish_dlna_port %}
+    ports:
+      - "7359:7359/udp"
+{% endif %}
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ jellyfin_shared_network }}
+    external: true

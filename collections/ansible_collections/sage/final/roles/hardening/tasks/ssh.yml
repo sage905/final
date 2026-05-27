@@ -1,0 +1,25 @@
+---
+- name: Ensure sshd_config.d exists
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Write the hardening sshd drop-in
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload sshd
+
+# `sshd -t` parses the live merged configuration (main file + every drop-in)
+# and exits non-zero on any error. Running it here, after writing the drop-in
+# but before the handler reloads sshd, means we fail loudly with the config
+# still on disk — the operator can SSH in and fix the drop-in.
+- name: Validate the merged sshd configuration
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false

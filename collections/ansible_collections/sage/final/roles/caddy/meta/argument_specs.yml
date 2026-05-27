@@ -1,0 +1,28 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy Caddy as the shared TLS-terminating reverse proxy.
+    options:
+      caddy_data_dir:
+        type: path
+        default: /srv/caddy
+      caddy_image:
+        type: str
+        default: docker.io/library/caddy:2-alpine
+      caddy_container:
+        type: str
+        default: caddy
+      caddy_admin_email:
+        type: str
+        required: true
+        description: Email address registered with the ACME provider.
+      caddy_shared_network:
+        type: str
+        default: web
+        description: External Podman network all backend roles attach to.
+      caddy_install_podman:
+        type: bool
+        default: true
+      caddy_user:
+        type: str
+        default: containers

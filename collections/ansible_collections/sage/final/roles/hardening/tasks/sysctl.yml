@@ -1,0 +1,14 @@
+---
+# `ansible.posix.sysctl` applies each value via sysctl(2) immediately and
+# persists it to the named file. `failed_when: false` lets the play skip
+# settings that aren't available on this kernel (e.g. kernel.yama.ptrace_scope
+# when the YAMA LSM isn't loaded).
+- name: Apply sysctl hardening settings
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-hardening.conf
+    state: present
+    reload: true
+  loop: "{{ hardening_sysctl_settings | dict2items }}"
+  failed_when: false

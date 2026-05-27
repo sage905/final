@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: pterodactyl_wings
+  namespace: sage
+  author: Sage
+  description: Install the Pterodactyl Wings daemon on Ubuntu game-server nodes.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - pterodactyl
+    - wings
+    - docker
+    - gameserver
+dependencies: []

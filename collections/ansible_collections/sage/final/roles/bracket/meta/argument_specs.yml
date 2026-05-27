@@ -1,0 +1,45 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy Bracket (tournament system) behind shared Caddy.
+    options:
+      bracket_data_dir:
+        type: path
+        default: /srv/bracket
+      bracket_fqdn:
+        type: str
+        required: true
+      bracket_image:
+        type: str
+        default: ghcr.io/evroon/bracket:latest
+      bracket_container_port:
+        type: int
+        default: 8400
+      bracket_db_image:
+        type: str
+        default: docker.io/library/postgres:16-alpine
+      bracket_db_name:
+        type: str
+        default: bracket
+      bracket_db_user:
+        type: str
+        default: bracket
+      bracket_db_password:
+        type: str
+        default: ""
+        no_log: true
+      bracket_caddy_conf_d_dir:
+        type: path
+        default: /srv/caddy/conf.d
+      bracket_caddy_container:
+        type: str
+        default: caddy
+      bracket_shared_network:
+        type: str
+        default: web
+      bracket_install_podman:
+        type: bool
+        default: true
+      bracket_user:
+        type: str
+        default: containers

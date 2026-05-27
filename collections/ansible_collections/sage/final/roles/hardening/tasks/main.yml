@@ -1,0 +1,37 @@
+---
+- name: Validate role arguments
+  ansible.builtin.validate_argument_spec:
+    argument_spec: >-
+      {{ (lookup('ansible.builtin.file',
+                 role_path ~ '/meta/argument_specs.yml')
+          | from_yaml)['argument_specs']['main']['options'] }}
+
+- name: Apply SSH hardening
+  ansible.builtin.import_tasks: ssh.yml
+  when: hardening_ssh_enabled
+  tags: [hardening, ssh]
+
+- name: Configure the firewall
+  ansible.builtin.import_tasks: firewall.yml
+  when: hardening_firewall_enabled
+  tags: [hardening, firewall]
+
+- name: Install and configure fail2ban
+  ansible.builtin.import_tasks: fail2ban.yml
+  when: hardening_fail2ban_enabled
+  tags: [hardening, fail2ban]
+
+- name: Enable unattended security updates
+  ansible.builtin.import_tasks: updates.yml
+  when: hardening_unattended_upgrades_enabled
+  tags: [hardening, updates]
+
+- name: Apply sysctl kernel hardening
+  ansible.builtin.import_tasks: sysctl.yml
+  when: hardening_sysctl_enabled
+  tags: [hardening, sysctl]
+
+- name: Provision the rootless containers user
+  ansible.builtin.import_tasks: containers_user.yml
+  when: hardening_containers_user_enabled
+  tags: [hardening, containers_user]

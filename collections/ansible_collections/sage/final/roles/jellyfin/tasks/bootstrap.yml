@@ -1,0 +1,24 @@
+---
+- name: Bring up the Jellyfin stack as {{ jellyfin_user }}
+  become: true
+  become_user: "{{ jellyfin_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[jellyfin_user][1] }}"
+  block:
+    - name: Ensure the shared Podman network exists
+      ansible.builtin.command:
+        cmd: "podman network create {{ jellyfin_shared_network }}"
+      register: jellyfin_network_result
+      changed_when: jellyfin_network_result.rc == 0
+      failed_when:
+        - jellyfin_network_result.rc != 0
+        - "'already exists' not in jellyfin_network_result.stderr"
+
+    - name: Bring up the Jellyfin stack
+      ansible.builtin.command:
+        cmd: podman-compose up -d --remove-orphans
+        chdir: "{{ jellyfin_data_dir }}"
+      register: jellyfin_compose_result
+      changed_when: "'Creating' in jellyfin_compose_result.stdout
+                     or 'Recreating' in jellyfin_compose_result.stdout
+                     or 'Started' in jellyfin_compose_result.stderr"

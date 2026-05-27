@@ -1,0 +1,16 @@
+---
+- name: Validate role arguments
+  ansible.builtin.validate_argument_spec:
+    argument_spec: >-
+      {{ (lookup('ansible.builtin.file',
+                 role_path ~ '/meta/argument_specs.yml')
+          | from_yaml)['argument_specs']['main']['options'] }}
+
+- name: "Look up the {{ jellyfin_user }} UID"
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ jellyfin_user }}"
+
+- ansible.builtin.import_tasks: dependencies.yml
+- ansible.builtin.import_tasks: install.yml
+- ansible.builtin.import_tasks: bootstrap.yml

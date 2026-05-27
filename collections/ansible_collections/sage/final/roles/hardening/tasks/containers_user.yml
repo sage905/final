@@ -1,0 +1,33 @@
+---
+- name: Create the rootless containers user
+  ansible.builtin.user:
+    name: "{{ hardening_containers_user }}"
+    shell: /usr/sbin/nologin
+    home: "/home/{{ hardening_containers_user }}"
+    create_home: true
+    state: present
+  register: hardening_containers_user_result
+
+# Linger keeps the user's systemd manager (and any user services + rootless
+# containers) running across reboots without an active login session.
+- name: Enable systemd linger for {{ hardening_containers_user }}
+  ansible.builtin.command:
+    cmd: "loginctl enable-linger {{ hardening_containers_user }}"
+    creates: "/var/lib/systemd/linger/{{ hardening_containers_user }}"
+
+# enable-linger doesn't start the manager on the current boot — kick it
+# manually so /run/user/<uid> exists for the application roles that follow.
+- name: Start the user's systemd manager
+  ansible.builtin.systemd:
+    name: "user@{{ hardening_containers_user_result.uid }}.service"
+    state: started
+    enabled: true
+
+# Lets the user bind 80/443 (Caddy) without CAP_NET_BIND_SERVICE on podman.
+- name: Lower the unprivileged port-start threshold
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_unprivileged_port_start
+    value: "{{ hardening_containers_unprivileged_port_start }}"
+    sysctl_file: /etc/sysctl.d/99-hardening.conf
+    state: present
+    reload: true

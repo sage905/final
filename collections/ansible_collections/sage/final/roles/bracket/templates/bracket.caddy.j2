@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+{{ bracket_fqdn }} {
+    encode gzip
+    reverse_proxy bracket:{{ bracket_container_port }} {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+        header_up Host {host}
+    }
+}

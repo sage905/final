@@ -3,19 +3,16 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ pterodactyl_panel_user }}"
+    group: "{{ pterodactyl_panel_user }}"
     mode: "0750"
   loop:
-    - "{{ ptero_data_dir }}"
-    - "{{ ptero_data_dir }}/secrets"
-    - "{{ ptero_data_dir }}/var"
-    - "{{ ptero_data_dir }}/nginx"
-    - "{{ ptero_data_dir }}/logs"
-    - "{{ ptero_data_dir }}/database"
-    - "{{ ptero_data_dir }}/caddy"
-    - "{{ ptero_data_dir }}/caddy/data"
-    - "{{ ptero_data_dir }}/caddy/config"
+    - "{{ pterodactyl_panel_data_dir }}"
+    - "{{ pterodactyl_panel_data_dir }}/secrets"
+    - "{{ pterodactyl_panel_data_dir }}/var"
+    - "{{ pterodactyl_panel_data_dir }}/nginx"
+    - "{{ pterodactyl_panel_data_dir }}/logs"
+    - "{{ pterodactyl_panel_data_dir }}/database"
 
 - name: Generate persistent secrets when not supplied
   ansible.builtin.include_tasks: _generate_secret.yml
@@ -25,49 +22,63 @@
       prefix: "base64:"
       length: 32
     - name: db_password
-      override: "{{ ptero_db_password }}"
+      override: "{{ pterodactyl_panel_db_password }}"
       prefix: ""
       length: 24
     - name: db_root_password
-      override: "{{ ptero_db_root_password }}"
+      override: "{{ pterodactyl_panel_db_root_password }}"
       prefix: ""
       length: 24
   loop_control:
     loop_var: secret
 
+# Secrets live on the target host (not the controller), so use `slurp` to
+# read them — `lookup('ansible.builtin.file', ...)` would look on the
+# controller's filesystem and fail.
+- name: Slurp generated secrets from the host
+  ansible.builtin.slurp:
+    src: "{{ pterodactyl_panel_data_dir }}/secrets/{{ item }}"
+  loop:
+    - app_key
+    - db_password
+    - db_root_password
+  register: pterodactyl_panel_secret_slurp
+  no_log: true
+
 - name: Resolve effective secrets
   ansible.builtin.set_fact:
-    ptero_effective_app_key: "{{ lookup('ansible.builtin.file', ptero_data_dir ~ '/secrets/app_key') | trim }}"
-    ptero_effective_db_password: "{{ ptero_db_password
-                                     if ptero_db_password | length > 0
-                                     else lookup('ansible.builtin.file', ptero_data_dir ~ '/secrets/db_password') | trim }}"
-    ptero_effective_db_root_password: "{{ ptero_db_root_password
-                                          if ptero_db_root_password | length > 0
-                                          else lookup('ansible.builtin.file', ptero_data_dir ~ '/secrets/db_root_password') | trim }}"
+    pterodactyl_panel_effective_app_key: "{{ pterodactyl_panel_secret_slurp.results[0].content | b64decode | trim }}"
+    pterodactyl_panel_effective_db_password: "{{ pterodactyl_panel_db_password
+                                                 if pterodactyl_panel_db_password | length > 0
+                                                 else pterodactyl_panel_secret_slurp.results[1].content | b64decode | trim }}"
+    pterodactyl_panel_effective_db_root_password: "{{ pterodactyl_panel_db_root_password
+                                                      if pterodactyl_panel_db_root_password | length > 0
+                                                      else pterodactyl_panel_secret_slurp.results[2].content | b64decode | trim }}"
+  no_log: true
 
 - name: Render docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2
-    dest: "{{ ptero_data_dir }}/docker-compose.yml"
-    owner: root
-    group: root
+    dest: "{{ pterodactyl_panel_data_dir }}/docker-compose.yml"
+    owner: "{{ pterodactyl_panel_user }}"
+    group: "{{ pterodactyl_panel_user }}"
     mode: "0640"
   notify: Recreate pterodactyl stack
 
 - name: Render panel environment file
   ansible.builtin.template:
     src: env.j2
-    dest: "{{ ptero_data_dir }}/.env"
-    owner: root
-    group: root
+    dest: "{{ pterodactyl_panel_data_dir }}/.env"
+    owner: "{{ pterodactyl_panel_user }}"
+    group: "{{ pterodactyl_panel_user }}"
     mode: "0640"
   notify: Recreate pterodactyl stack
 
-- name: Render Caddyfile
+- name: Drop the Caddy vhost snippet
   ansible.builtin.template:
-    src: Caddyfile.j2
-    dest: "{{ ptero_data_dir }}/caddy/Caddyfile"
-    owner: root
-    group: root
+    src: pterodactyl.caddy.j2
+    dest: "{{ pterodactyl_panel_caddy_conf_d_dir }}/pterodactyl.caddy"
+    owner: "{{ pterodactyl_panel_user }}"
+    group: "{{ pterodactyl_panel_user }}"
     mode: "0644"
   notify: Reload caddy

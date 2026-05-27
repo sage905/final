@@ -7,57 +7,38 @@
       sage.final.pterodactyl_panel currently supports Ubuntu only. Detected
       distribution: {{ ansible_facts['distribution'] | default('unknown') }}.
 
-- name: Install Docker engine and compose plugin
-  when: ptero_install_docker
+- name: Install Podman and podman-compose
+  when: pterodactyl_panel_install_podman
   block:
-    - name: Install Docker apt prerequisites
+    - name: Install podman and podman-compose
       ansible.builtin.apt:
         name:
-          - ca-certificates
-          - curl
-          - gnupg
+          - podman
+          - podman-compose
+          - uidmap
         state: present
         update_cache: true
         cache_valid_time: 3600
 
-    - name: Ensure the Docker keyring directory exists
-      ansible.builtin.file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: "0755"
-
-    - name: Fetch the Docker apt signing key
-      ansible.builtin.get_url:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        dest: /etc/apt/keyrings/docker.asc
-        mode: "0644"
-        force: false
-
-    - name: Configure the Docker apt repository
-      ansible.builtin.apt_repository:
-        repo: >-
-          deb [arch={{ ansible_facts['architecture']
-                       | replace('x86_64', 'amd64')
-                       | replace('aarch64', 'arm64') }}
-          signed-by=/etc/apt/keyrings/docker.asc]
-          https://download.docker.com/linux/ubuntu
-          {{ ansible_facts['distribution_release'] }} stable
-        filename: docker
-        state: present
-        update_cache: true
-
-    - name: Install Docker engine, CLI, and compose plugin
-      ansible.builtin.apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-        state: present
-
-    - name: Ensure Docker is enabled and running
+    - name: Enable the Podman API socket
       ansible.builtin.systemd:
-        name: docker
+        name: podman.socket
         enabled: true
         state: started
+    - name: Ensure /etc/containers/registries.conf.d exists
+      ansible.builtin.file:
+        path: /etc/containers/registries.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Configure Podman unqualified-search registries
+      ansible.builtin.copy:
+        dest: /etc/containers/registries.conf.d/00-shortnames.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          unqualified-search-registries = ["docker.io", "ghcr.io", "quay.io"]
+

@@ -1,0 +1,35 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy Dashy behind the panel role's shared Caddy.
+    options:
+      dashy_data_dir:
+        type: path
+        default: /srv/dashy
+      dashy_fqdn:
+        type: str
+        required: true
+      dashy_image:
+        type: str
+        default: docker.io/lissy93/dashy:latest
+      dashy_container_port:
+        type: int
+        default: 8080
+      dashy_seed_config:
+        type: bool
+        default: true
+      dashy_caddy_conf_d_dir:
+        type: path
+        default: /srv/caddy/conf.d
+      dashy_caddy_container:
+        type: str
+        default: caddy
+      dashy_shared_network:
+        type: str
+        default: web
+      dashy_install_podman:
+        type: bool
+        default: true
+      dashy_user:
+        type: str
+        default: containers

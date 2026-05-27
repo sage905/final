@@ -1,0 +1,24 @@
+---
+- name: Bring up the WordPress stack as {{ wordpress_user }}
+  become: true
+  become_user: "{{ wordpress_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[wordpress_user][1] }}"
+  block:
+    - name: Ensure the shared Podman network exists
+      ansible.builtin.command:
+        cmd: "podman network create {{ wordpress_shared_network }}"
+      register: wordpress_network_result
+      changed_when: wordpress_network_result.rc == 0
+      failed_when:
+        - wordpress_network_result.rc != 0
+        - "'already exists' not in wordpress_network_result.stderr"
+
+    - name: Bring up the WordPress stack
+      ansible.builtin.command:
+        cmd: podman-compose up -d --remove-orphans
+        chdir: "{{ wordpress_data_dir }}"
+      register: wordpress_compose_result
+      changed_when: "'Creating' in wordpress_compose_result.stdout
+                     or 'Recreating' in wordpress_compose_result.stdout
+                     or 'Started' in wordpress_compose_result.stderr"

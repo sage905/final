@@ -1,0 +1,43 @@
+---
+- name: Create Glance directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ glance_user }}"
+    group: "{{ glance_user }}"
+    mode: "0755"
+  loop:
+    - "{{ glance_data_dir }}"
+    - "{{ glance_data_dir }}/config"
+
+- name: Seed an initial glance.yml when missing
+  ansible.builtin.copy:
+    dest: "{{ glance_data_dir }}/config/glance.yml"
+    content: |
+      pages:
+        - name: Home
+          columns: []
+    force: false
+    owner: "{{ glance_user }}"
+    group: "{{ glance_user }}"
+    mode: "0644"
+  when: glance_seed_config
+  notify: Recreate glance stack
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ glance_data_dir }}/docker-compose.yml"
+    owner: "{{ glance_user }}"
+    group: "{{ glance_user }}"
+    mode: "0640"
+  notify: Recreate glance stack
+
+- name: Drop the Caddy vhost snippet
+  ansible.builtin.template:
+    src: glance.caddy.j2
+    dest: "{{ glance_caddy_conf_d_dir }}/glance.caddy"
+    owner: "{{ glance_user }}"
+    group: "{{ glance_user }}"
+    mode: "0644"
+  notify: Reload caddy

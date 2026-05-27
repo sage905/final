@@ -1,0 +1,22 @@
+---
+bracket_data_dir: /srv/bracket
+bracket_fqdn: ""
+bracket_image: ghcr.io/evroon/bracket:latest
+bracket_container_port: 8400
+
+# Postgres sidecar
+bracket_db_image: docker.io/library/postgres:16-alpine
+bracket_db_name: bracket
+bracket_db_user: bracket
+# Leave empty to auto-generate and persist under {{ bracket_data_dir }}/secrets/.
+bracket_db_password: ""
+
+# Shared infra provided by sage.final.caddy.
+bracket_caddy_conf_d_dir: /srv/caddy/conf.d
+bracket_caddy_container: caddy
+bracket_shared_network: web
+
+bracket_install_podman: true
+
+# Rootless: user that owns this role's data dir and runs podman-compose.
+bracket_user: containers

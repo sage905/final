@@ -12,19 +12,30 @@
     update_cache: true
     cache_valid_time: 3600
 
-- name: Install Cockpit from the distribution release pocket
-  ansible.builtin.apt:
-    name: "{{ cockpit_packages }}"
+- name: Add the {{ ansible_facts['distribution_release'] }}-backports apt source
+  ansible.builtin.apt_repository:
+    repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_facts['distribution_release'] }}-backports main universe"
     state: present
-  when: not cockpit_use_backports
-  notify: Restart cockpit
-
-- name: Install Cockpit from the {{ ansible_facts['distribution_release'] }}-backports pocket
-  ansible.builtin.apt:
-    name: "{{ cockpit_packages }}"
-    state: present
-    default_release: "{{ ansible_facts['distribution_release'] }}-backports"
+    filename: "ubuntu-{{ ansible_facts['distribution_release'] }}-backports"
+    update_cache: true
+  register: cockpit_backports_add
+  failed_when: false
   when: cockpit_use_backports
+
+- name: Warn when the backports pocket is unavailable
+  ansible.builtin.debug:
+    msg: >-
+      {{ ansible_facts['distribution_release'] }}-backports could not be
+      enabled on this host (likely because the pocket has not opened for
+      this release yet). Cockpit will install from the main pocket.
+  when:
+    - cockpit_use_backports
+    - cockpit_backports_add.failed | default(false)
+
+- name: Install Cockpit
+  ansible.builtin.apt:
+    name: "{{ cockpit_packages }}"
+    state: present
   notify: Restart cockpit
 
 - name: Enable and start the Cockpit socket

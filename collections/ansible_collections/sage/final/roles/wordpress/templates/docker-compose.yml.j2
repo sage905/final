@@ -1,0 +1,40 @@
+---
+# {{ ansible_managed }}
+name: wordpress
+
+services:
+  wordpress-db:
+    image: {{ wordpress_db_image }}
+    container_name: wordpress-db
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - "{{ wordpress_data_dir }}/wordpress-db:/var/lib/mysql"
+    environment:
+      MYSQL_DATABASE: "{{ wordpress_db_name }}"
+      MYSQL_USER: "{{ wordpress_db_user }}"
+      MYSQL_PASSWORD: "{{ wordpress_effective_db_password }}"
+      MYSQL_ROOT_PASSWORD: "{{ wordpress_effective_db_root_password }}"
+    networks:
+      - shared
+
+  wordpress:
+    image: {{ wordpress_image }}
+    container_name: wordpress
+    restart: always
+    depends_on:
+      - wordpress-db
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db
+      WORDPRESS_DB_NAME: "{{ wordpress_db_name }}"
+      WORDPRESS_DB_USER: "{{ wordpress_db_user }}"
+      WORDPRESS_DB_PASSWORD: "{{ wordpress_effective_db_password }}"
+    volumes:
+      - "{{ wordpress_data_dir }}/wordpress:/var/www/html"
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ wordpress_shared_network }}
+    external: true

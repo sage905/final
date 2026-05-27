@@ -3,11 +3,38 @@
 #   ansible-navigator run site.yml --eei ee-demo -i inventory/hosts.yml
 # Or limit to one:
 #   ansible-navigator run site.yml --tags cockpit
+#   ansible-navigator run site.yml --tags caddy
 #   ansible-navigator run site.yml --tags pterodactyl
-- name: Configure Server
-  hosts: coserver
+#   ansible-navigator run site.yml --tags wings
+#   ansible-navigator run site.yml --tags wordpress
+#   ansible-navigator run site.yml --tags dashy
+#   ansible-navigator run site.yml --tags glance
+#   ansible-navigator run site.yml --tags bracket
+#   ansible-navigator run site.yml --tags jellyfin
+#   ansible-navigator run site.yml --tags hardening
+# Skip the apt upgrade with --skip-tags update.
+- name: Bring all packages up to date
+  hosts: all
+  become: true
+  gather_facts: true
+  tags:
+    - update
+  tasks:
+    - name: Update apt cache and dist-upgrade
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+        cache_valid_time: 3600
+      when: ansible_facts['os_family'] == 'Debian'
+
+- name: Harden the host
+  hosts: all
+  become: true
+  gather_facts: true
+  tags:
+    - hardening
   roles:
-    - role: sage.final.run
+    - role: sage.final.hardening
 
 - name: Install Cockpit
   hosts: coserver
@@ -18,6 +45,15 @@
   roles:
     - role: sage.final.cockpit
 
+- name: Deploy Caddy
+  hosts: caddy
+  become: true
+  gather_facts: true
+  tags:
+    - caddy
+  roles:
+    - role: sage.final.caddy
+
 - name: Deploy Pterodactyl Panel
   hosts: pterodactyl_panel
   become: true
@@ -26,3 +62,57 @@
     - pterodactyl
   roles:
     - role: sage.final.pterodactyl_panel
+
+- name: Deploy Pterodactyl Wings
+  hosts: pterodactyl_wings
+  become: true
+  gather_facts: true
+  tags:
+    - wings
+  roles:
+    - role: sage.final.pterodactyl_wings
+
+- name: Deploy WordPress
+  hosts: wordpress
+  become: true
+  gather_facts: true
+  tags:
+    - wordpress
+  roles:
+    - role: sage.final.wordpress
+
+- name: Deploy Dashy
+  hosts: dashy
+  become: true
+  gather_facts: true
+  tags:
+    - dashy
+  roles:
+    - role: sage.final.dashy
+
+- name: Deploy Glance
+  hosts: glance
+  become: true
+  gather_facts: true
+  tags:
+    - glance
+  roles:
+    - role: sage.final.glance
+
+- name: Deploy Bracket
+  hosts: bracket
+  become: true
+  gather_facts: true
+  tags:
+    - bracket
+  roles:
+    - role: sage.final.bracket
+
+- name: Deploy Jellyfin
+  hosts: jellyfin
+  become: true
+  gather_facts: true
+  tags:
+    - jellyfin
+  roles:
+    - role: sage.final.jellyfin

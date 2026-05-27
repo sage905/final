@@ -10,7 +10,7 @@ Requirements
 
 - Ubuntu 22.04 (Jammy) or 24.04 (Noble) on the panel host
 - `community.docker` collection
-- A DNS record for `ptero_panel_fqdn` pointing at the panel host (required for
+- A DNS record for `pterodactyl_panel_fqdn` pointing at the panel host (required for
   Caddy's HTTP-01 ACME challenge)
 - Ports 80/tcp and 443/tcp reachable from the public internet
 - `become: true`
@@ -23,12 +23,12 @@ Required variables that must be set per-host:
 
 | Variable             | Description                                     |
 |----------------------|-------------------------------------------------|
-| `ptero_panel_fqdn`   | Public hostname for the panel.                  |
-| `ptero_admin_email`  | ACME contact and default service author.        |
+| `pterodactyl_panel_fqdn`   | Public hostname for the panel.                  |
+| `pterodactyl_panel_admin_email`  | ACME contact and default service author.        |
 
 The role generates and persists `APP_KEY`, the database user password, and the
-MariaDB root password under `{{ ptero_data_dir }}/secrets/` on first run. Pass
-your own values via `ptero_db_password` / `ptero_db_root_password` to override.
+MariaDB root password under `{{ pterodactyl_panel_data_dir }}/secrets/` on first run. Pass
+your own values via `pterodactyl_panel_db_password` / `pterodactyl_panel_db_root_password` to override.
 
 Example Playbook
 ----------------
@@ -40,20 +40,20 @@ Example Playbook
   roles:
     - role: sage.final.pterodactyl_panel
       vars:
-        ptero_panel_fqdn: panel.example.org
-        ptero_admin_email: ops@example.org
-        ptero_admin_username: rootadmin
-        ptero_admin_password: "{{ vault_ptero_admin_password }}"
-        ptero_mail_driver: smtp
-        ptero_mail_host: smtp.sendgrid.net
-        ptero_mail_username: apikey
-        ptero_mail_password: "{{ vault_sendgrid_api_key }}"
+        pterodactyl_panel_fqdn: panel.example.org
+        pterodactyl_panel_admin_email: ops@example.org
+        pterodactyl_panel_admin_username: rootadmin
+        pterodactyl_panel_admin_password: "{{ vault_ptero_admin_password }}"
+        pterodactyl_panel_mail_driver: smtp
+        pterodactyl_panel_mail_host: smtp.sendgrid.net
+        pterodactyl_panel_mail_username: apikey
+        pterodactyl_panel_mail_password: "{{ vault_sendgrid_api_key }}"
 ```
 
 Operations
 ----------
 
-- **Update the panel image**: bump `ptero_panel_image` and re-run the role.
+- **Update the panel image**: bump `pterodactyl_panel_image` and re-run the role.
   The compose handler recreates affected services.
 - **Manual artisan commands**:
   `docker compose -f /srv/pterodactyl/docker-compose.yml exec panel php artisan <cmd>`

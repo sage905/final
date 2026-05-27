@@ -1,0 +1,24 @@
+---
+- name: Bring up the Dashy stack as {{ dashy_user }}
+  become: true
+  become_user: "{{ dashy_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[dashy_user][1] }}"
+  block:
+    - name: Ensure the shared Podman network exists
+      ansible.builtin.command:
+        cmd: "podman network create {{ dashy_shared_network }}"
+      register: dashy_network_result
+      changed_when: dashy_network_result.rc == 0
+      failed_when:
+        - dashy_network_result.rc != 0
+        - "'already exists' not in dashy_network_result.stderr"
+
+    - name: Bring up the Dashy stack
+      ansible.builtin.command:
+        cmd: podman-compose up -d --remove-orphans
+        chdir: "{{ dashy_data_dir }}"
+      register: dashy_compose_result
+      changed_when: "'Creating' in dashy_compose_result.stdout
+                     or 'Recreating' in dashy_compose_result.stdout
+                     or 'Started' in dashy_compose_result.stderr"

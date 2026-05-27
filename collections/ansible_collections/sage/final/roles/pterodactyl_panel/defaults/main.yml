@@ -2,54 +2,70 @@
 # --- Stack location -----------------------------------------------------------
 # Root directory on the host that holds the compose project, generated secrets,
 # bind-mounted container volumes, and Caddy state.
-ptero_data_dir: /srv/pterodactyl
+pterodactyl_panel_data_dir: /srv/pterodactyl
+
+# --- Domain layout ------------------------------------------------------------
+# Hostname Caddy obtains a certificate for and serves the panel on.
+pterodactyl_panel_fqdn: ""
+# Hostname Caddy serves the Wings UI on (reverse-proxied to the Wings daemon).
+pterodactyl_panel_wings_fqdn: ""
+# Backend URL Caddy reverse-proxies the wings vhost to. Defaults to the
+# Wings daemon on the same host via Podman's host alias. Point this at a
+# remote node URL when Wings runs elsewhere. If you proxy to https:// Caddy
+# will skip TLS verification (Wings ships a self-signed cert).
+pterodactyl_panel_wings_backend: "http://host.containers.internal:8080"
 
 # --- Panel ---------------------------------------------------------------------
-ptero_panel_image: ghcr.io/pterodactyl/panel:latest
-
-# Public hostname users hit in the browser. Must resolve to this host for
-# Caddy's ACME challenge to succeed.
-ptero_panel_fqdn: panel.example.com
+# Default image bundles Pterodactyl Panel + Blueprint Framework, maintained by
+# the Blueprint authors. Tags track upstream panel versions (e.g. v1.11.7);
+# pin to a specific tag for reproducibility. To run vanilla Pterodactyl
+# without Blueprint, override with ghcr.io/pterodactyl/panel:latest.
+pterodactyl_panel_image: ghcr.io/blueprintframework/blueprint:latest
 
 # Email passed to Caddy for ACME account registration and to the panel as the
 # default service author.
-ptero_admin_email: admin@example.com
+pterodactyl_panel_admin_email: admin@example.com
 
-ptero_timezone: UTC
+pterodactyl_panel_timezone: UTC
 
 # --- Database ------------------------------------------------------------------
-ptero_db_image: mariadb:10.11
-ptero_db_name: panel
-ptero_db_user: pterodactyl
-# Leave empty to auto-generate and persist under {{ ptero_data_dir }}/secrets/.
-ptero_db_password: ""
-ptero_db_root_password: ""
+pterodactyl_panel_db_image: docker.io/library/mariadb:10.11
+pterodactyl_panel_db_name: panel
+pterodactyl_panel_db_user: pterodactyl
+# Leave empty to auto-generate and persist under {{ pterodactyl_panel_data_dir }}/secrets/.
+pterodactyl_panel_db_password: ""
+pterodactyl_panel_db_root_password: ""
 
 # --- Cache ---------------------------------------------------------------------
-ptero_cache_image: redis:7-alpine
+pterodactyl_panel_cache_image: docker.io/library/redis:7-alpine
 
-# --- Reverse proxy -------------------------------------------------------------
-ptero_caddy_image: caddy:2-alpine
+# --- Shared Caddy (provided by sage.final.caddy) ------------------------------
+pterodactyl_panel_caddy_conf_d_dir: /srv/caddy/conf.d
+pterodactyl_panel_caddy_container: caddy
+pterodactyl_panel_shared_network: web
 
 # --- Mail ----------------------------------------------------------------------
 # Panel sends password-reset and account-creation mail. Defaults to the
 # in-container `mail` driver, which writes to a log file rather than sending.
-ptero_mail_driver: log
-ptero_mail_host: ""
-ptero_mail_port: 587
-ptero_mail_username: ""
-ptero_mail_password: ""
-ptero_mail_encryption: tls
-ptero_mail_from: "{{ ptero_admin_email }}"
+pterodactyl_panel_mail_driver: log
+pterodactyl_panel_mail_host: ""
+pterodactyl_panel_mail_port: 587
+pterodactyl_panel_mail_username: ""
+pterodactyl_panel_mail_password: ""
+pterodactyl_panel_mail_encryption: tls
+pterodactyl_panel_mail_from: "{{ pterodactyl_panel_admin_email }}"
 
 # --- Bootstrap admin user ------------------------------------------------------
 # When username/password are both set, the role creates this user after first
 # boot via `php artisan p:user:make`. Leave empty to create users manually.
-ptero_admin_username: ""
-ptero_admin_password: ""
-ptero_admin_first_name: Panel
-ptero_admin_last_name: Admin
+pterodactyl_panel_admin_username: ""
+pterodactyl_panel_admin_password: ""
+pterodactyl_panel_admin_first_name: Panel
+pterodactyl_panel_admin_last_name: Admin
 
-# --- Docker engine install -----------------------------------------------------
-# Set to false on hosts where Docker is already managed elsewhere.
-ptero_install_docker: true
+# --- Container runtime install -------------------------------------------------
+# Set to false on hosts where Podman is already managed elsewhere.
+pterodactyl_panel_install_podman: true
+
+# Rootless: user that owns this role's data dir and runs podman-compose.
+pterodactyl_panel_user: containers

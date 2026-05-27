@@ -1,0 +1,39 @@
+---
+# {{ ansible_managed }}
+name: bracket
+
+services:
+  bracket-db:
+    image: {{ bracket_db_image }}
+    container_name: bracket-db
+    restart: always
+    volumes:
+      - "{{ bracket_data_dir }}/postgres:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_DB: "{{ bracket_db_name }}"
+      POSTGRES_USER: "{{ bracket_db_user }}"
+      POSTGRES_PASSWORD: "{{ bracket_effective_db_password }}"
+    networks:
+      - shared
+
+  bracket:
+    image: {{ bracket_image }}
+    container_name: bracket
+    restart: always
+    depends_on:
+      - bracket-db
+    environment:
+      ENVIRONMENT: PRODUCTION
+      SERVE_FRONTEND: "true"
+      API_PREFIX: /api
+      CORS_ORIGINS: "https://{{ bracket_fqdn }}"
+      PG_DSN: "postgresql://{{ bracket_db_user }}:{{ bracket_effective_db_password }}@bracket-db:5432/{{ bracket_db_name }}"
+    volumes:
+      - "{{ bracket_data_dir }}/static:/app/static"
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ bracket_shared_network }}
+    external: true

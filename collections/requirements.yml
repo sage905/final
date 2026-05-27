@@ -13,10 +13,7 @@ collections:
 
   - name: community.general
 
-  - name: community.docker
-
-  - name: https://github.com/redhat-cop/network.backup
-    type: git
+  - name: containers.podman
 
   # TO-DO: User's own collections can also be specified as mention below.
   # - name: my_organization.my_collection
