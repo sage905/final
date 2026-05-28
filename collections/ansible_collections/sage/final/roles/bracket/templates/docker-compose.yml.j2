@@ -8,7 +8,7 @@ services:
     container_name: bracket-db
     restart: always
     volumes:
-      - "{{ bracket_data_dir }}/postgres:/var/lib/postgresql/data"
+      - "{{ bracket_data_dir }}/postgres:/var/lib/postgresql/data:U"
     environment:
       POSTGRES_DB: "{{ bracket_db_name }}"
       POSTGRES_USER: "{{ bracket_db_user }}"
@@ -29,7 +29,7 @@ services:
       CORS_ORIGINS: "https://{{ bracket_fqdn }}"
       PG_DSN: "postgresql://{{ bracket_db_user }}:{{ bracket_effective_db_password }}@bracket-db:5432/{{ bracket_db_name }}"
     volumes:
-      - "{{ bracket_data_dir }}/static:/app/static"
+      - "{{ bracket_data_dir }}/static:/app/static:U"
     networks:
       - shared
 

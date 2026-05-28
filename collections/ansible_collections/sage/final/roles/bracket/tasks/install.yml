@@ -12,6 +12,21 @@
     - "{{ bracket_data_dir }}/static"
     - "{{ bracket_data_dir }}/postgres"
 
+# `:U` on the compose mounts only chowns files within podman's subuid range.
+# Files left behind by a prior root or rootful run can be outside that range
+# and trigger "lchown: operation not permitted" on container start. Run a
+# pre-emptive recursive chown as root to normalize ownership.
+- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
+  ansible.builtin.file:
+    path: "{{ bracket_data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ bracket_user }}"
+    group: "{{ bracket_user }}"
+    recurse: true
+  loop:
+    - postgres
+    - static
+
 - name: Generate the DB password if not supplied
   ansible.builtin.include_tasks: _generate_secret.yml
   loop:

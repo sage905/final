@@ -9,7 +9,7 @@ services:
     restart: always
     command: --default-authentication-plugin=mysql_native_password
     volumes:
-      - "{{ wordpress_data_dir }}/wordpress-db:/var/lib/mysql"
+      - "{{ wordpress_data_dir }}/wordpress-db:/var/lib/mysql:U"
     environment:
       MYSQL_DATABASE: "{{ wordpress_db_name }}"
       MYSQL_USER: "{{ wordpress_db_user }}"
@@ -30,7 +30,7 @@ services:
       WORDPRESS_DB_USER: "{{ wordpress_db_user }}"
       WORDPRESS_DB_PASSWORD: "{{ wordpress_effective_db_password }}"
     volumes:
-      - "{{ wordpress_data_dir }}/wordpress:/var/www/html"
+      - "{{ wordpress_data_dir }}/wordpress:/var/www/html:U"
     networks:
       - shared
 

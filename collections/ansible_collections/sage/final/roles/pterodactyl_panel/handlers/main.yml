@@ -1,5 +1,5 @@
 ---
-- name: Recreate pterodactyl_panel stack
+- name: Recreate pterodactyl stack
   ansible.builtin.command:
     cmd: podman-compose up -d --force-recreate
     chdir: "{{ pterodactyl_panel_data_dir }}"

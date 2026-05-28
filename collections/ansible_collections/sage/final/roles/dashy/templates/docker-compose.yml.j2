@@ -8,7 +8,7 @@ services:
     container_name: dashy
     restart: always
     volumes:
-      - "{{ dashy_data_dir }}/user-data:/app/user-data"
+      - "{{ dashy_data_dir }}/user-data:/app/user-data:U"
     networks:
       - shared
 

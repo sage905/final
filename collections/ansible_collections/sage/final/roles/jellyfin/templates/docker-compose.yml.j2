@@ -10,8 +10,8 @@ services:
     environment:
       JELLYFIN_PublishedServerUrl: "https://{{ jellyfin_fqdn }}"
     volumes:
-      - "{{ jellyfin_data_dir }}/config:/config"
-      - "{{ jellyfin_data_dir }}/cache:/cache"
+      - "{{ jellyfin_data_dir }}/config:/config:U"
+      - "{{ jellyfin_data_dir }}/cache:/cache:U"
       - "{{ jellyfin_media_path }}:/media"
 {% if jellyfin_publish_dlna_port %}
     ports:

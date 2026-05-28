@@ -8,7 +8,7 @@ services:
     container_name: glance
     restart: always
     volumes:
-      - "{{ glance_data_dir }}/config:/app/config"
+      - "{{ glance_data_dir }}/config:/app/config:U"
     networks:
       - shared
 

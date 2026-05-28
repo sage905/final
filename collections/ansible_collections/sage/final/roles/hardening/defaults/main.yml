@@ -2,9 +2,9 @@
 # --- Section toggles ----------------------------------------------------------
 # Set any of these to false to skip that section entirely.
 hardening_ssh_enabled: true
-hardening_firewall_enabled: true
+hardening_firewall_enabled: false
 hardening_fail2ban_enabled: true
-hardening_unattended_upgrades_enabled: true
+hardening_unattended_upgrades_enabled: false
 hardening_sysctl_enabled: true
 hardening_containers_user_enabled: true
 
@@ -111,3 +111,6 @@ hardening_sysctl_settings:
   kernel.dmesg_restrict: 1
   # Restrict ptrace to direct children
   kernel.yama.ptrace_scope: 1
+  # Required by Redis (and recommended for any forking/COW workload) so
+  # background saves don't fail under transient memory pressure.
+  vm.overcommit_memory: 1

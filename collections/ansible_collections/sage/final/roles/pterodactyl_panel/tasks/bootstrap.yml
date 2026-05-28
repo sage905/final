@@ -14,6 +14,21 @@
         - pterodactyl_panel_network_result.rc != 0
         - "'already exists' not in pterodactyl_panel_network_result.stderr"
 
+    # Pull explicitly first. The Blueprint image is multi-GB; folding the
+    # pull into `compose up` makes it look like ansible has frozen for
+    # ~5-15 min on a small VPS. As its own task, progress is visible in the
+    # play log and a true hang surfaces against the timeout.
+    - name: Pull images for the Pterodactyl stack
+      ansible.builtin.command:
+        cmd: podman-compose pull
+        chdir: "{{ pterodactyl_panel_data_dir }}"
+      register: pterodactyl_panel_pull_result
+      changed_when: >-
+        'Trying to pull' in pterodactyl_panel_pull_result.stdout
+        or 'Copying blob' in pterodactyl_panel_pull_result.stderr
+        or 'Writing manifest' in pterodactyl_panel_pull_result.stderr
+      timeout: 1800   # 30 min ceiling — generous for slow links, hard cap
+
     - name: Bring the Pterodactyl stack up
       ansible.builtin.command:
         cmd: podman-compose up -d --remove-orphans
@@ -22,15 +37,36 @@
       changed_when: "'Creating' in pterodactyl_panel_compose_result.stdout
                      or 'Recreating' in pterodactyl_panel_compose_result.stdout
                      or 'Started' in pterodactyl_panel_compose_result.stderr"
+      timeout: 300
 
     - name: Wait for the panel container to accept HTTP
-      ansible.builtin.command:
-        cmd: podman exec pterodactyl-panel curl -fsS -o /dev/null http://localhost:80/
-      register: pterodactyl_panel_health
-      retries: 30
-      delay: 5
-      until: pterodactyl_panel_health.rc == 0
-      changed_when: false
+      block:
+        # 60 × 10s = up to 10 minutes. Blueprint's first boot runs panel
+        # migrations + a yarn build inside the container, which can take
+        # several minutes on a small VPS.
+        - name: Poll panel HTTP until it answers
+          ansible.builtin.command:
+            cmd: podman exec pterodactyl-panel curl -fsS -o /dev/null http://localhost:80/
+          register: pterodactyl_panel_health
+          retries: 60
+          delay: 10
+          until: pterodactyl_panel_health.rc == 0
+          changed_when: false
+      rescue:
+        - name: Dump panel container logs for diagnosis
+          ansible.builtin.command:
+            cmd: podman logs --tail 200 pterodactyl-panel
+          register: pterodactyl_panel_logs
+          changed_when: false
+          failed_when: false
+        - name: Show the last 200 lines of panel logs
+          ansible.builtin.debug:
+            msg: "{{ pterodactyl_panel_logs.stdout_lines }}"
+        - name: Fail with original health check error
+          ansible.builtin.fail:
+            msg: >-
+              The panel container is running but never started serving HTTP
+              on port 80 within 10 minutes. Inspect the logs printed above.
 
     - name: Create the bootstrap admin user
       when:

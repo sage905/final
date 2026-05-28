@@ -14,6 +14,23 @@
     - "{{ pterodactyl_panel_data_dir }}/logs"
     - "{{ pterodactyl_panel_data_dir }}/database"
 
+# `:U` on the compose mounts only chowns files within podman's subuid range.
+# Files left behind by a prior root or rootful run can be outside that range
+# and trigger "lchown: operation not permitted" on container start. Run a
+# pre-emptive recursive chown as root to normalize ownership.
+- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
+  ansible.builtin.file:
+    path: "{{ pterodactyl_panel_data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ pterodactyl_panel_user }}"
+    group: "{{ pterodactyl_panel_user }}"
+    recurse: true
+  loop:
+    - var
+    - nginx
+    - logs
+    - database
+
 - name: Generate persistent secrets when not supplied
   ansible.builtin.include_tasks: _generate_secret.yml
   loop:

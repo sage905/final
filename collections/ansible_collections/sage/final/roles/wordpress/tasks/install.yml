@@ -12,6 +12,21 @@
     - "{{ wordpress_data_dir }}/wordpress"
     - "{{ wordpress_data_dir }}/wordpress-db"
 
+# `:U` on the compose mounts only chowns files within podman's subuid range.
+# Files left behind by a prior root or rootful run can be outside that range
+# and trigger "lchown: operation not permitted" on container start. Run a
+# pre-emptive recursive chown as root to normalize ownership.
+- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
+  ansible.builtin.file:
+    path: "{{ wordpress_data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ wordpress_user }}"
+    group: "{{ wordpress_user }}"
+    recurse: true
+  loop:
+    - wordpress
+    - wordpress-db
+
 - name: Generate persistent secrets when not supplied
   ansible.builtin.include_tasks: _generate_secret.yml
   loop:

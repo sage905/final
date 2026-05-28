@@ -10,6 +10,20 @@
     - "{{ glance_data_dir }}"
     - "{{ glance_data_dir }}/config"
 
+# `:U` on the compose mounts only chowns files within podman's subuid range.
+# Files left behind by a prior root or rootful run can be outside that range
+# and trigger "lchown: operation not permitted" on container start. Run a
+# pre-emptive recursive chown as root to normalize ownership.
+- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
+  ansible.builtin.file:
+    path: "{{ glance_data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ glance_user }}"
+    group: "{{ glance_user }}"
+    recurse: true
+  loop:
+    - config
+
 - name: Seed an initial glance.yml when missing
   ansible.builtin.copy:
     dest: "{{ glance_data_dir }}/config/glance.yml"

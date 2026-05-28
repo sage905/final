@@ -29,7 +29,9 @@ pterodactyl_panel_admin_email: admin@example.com
 pterodactyl_panel_timezone: UTC
 
 # --- Database ------------------------------------------------------------------
-pterodactyl_panel_db_image: docker.io/library/mariadb:10.11
+# 11.4+ auto-generates self-signed TLS certs and enables SSL by default,
+# which is required by the strict mariadb-client bundled in the panel image.
+pterodactyl_panel_db_image: docker.io/library/mariadb:11.4
 pterodactyl_panel_db_name: panel
 pterodactyl_panel_db_user: pterodactyl
 # Leave empty to auto-generate and persist under {{ pterodactyl_panel_data_dir }}/secrets/.

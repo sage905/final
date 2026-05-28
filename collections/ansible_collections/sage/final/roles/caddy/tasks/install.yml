@@ -12,6 +12,21 @@
     - "{{ caddy_data_dir }}/data"
     - "{{ caddy_data_dir }}/config"
 
+# `:U` on the compose mounts only chowns files within podman's subuid range.
+# Files left behind by a prior root or rootful run can be outside that range
+# and trigger "lchown: operation not permitted" on container start. Run a
+# pre-emptive recursive chown as root to normalize ownership.
+- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
+  ansible.builtin.file:
+    path: "{{ caddy_data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ caddy_user }}"
+    group: "{{ caddy_user }}"
+    recurse: true
+  loop:
+    - data
+    - config
+
 - name: Render Caddyfile
   ansible.builtin.template:
     src: Caddyfile.j2
