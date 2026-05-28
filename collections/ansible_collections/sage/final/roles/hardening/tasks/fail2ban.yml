@@ -1,10 +1,20 @@
 ---
+- name: Refresh apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
 - name: Install fail2ban
   ansible.builtin.apt:
     name: fail2ban
     state: present
-    update_cache: true
-    cache_valid_time: 3600
+  register: hardening_fail2ban_install
+
+- name: Verify fail2ban package is fully configured
+  ansible.builtin.command: dpkg-query -W -f='${Status}' fail2ban
+  register: hardening_fail2ban_dpkg
+  changed_when: false
+  failed_when: "'install ok installed' not in hardening_fail2ban_dpkg.stdout"
 
 - name: Write fail2ban jail.local
   ansible.builtin.template:
@@ -17,6 +27,7 @@
 
 - name: Enable and start fail2ban
   ansible.builtin.systemd:
-    name: fail2ban
+    name: fail2ban.service
     enabled: true
     state: started
+    daemon_reload: true

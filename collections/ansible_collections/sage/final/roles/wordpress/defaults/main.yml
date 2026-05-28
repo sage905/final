@@ -2,11 +2,6 @@
 # --- Stack location -----------------------------------------------------------
 wordpress_data_dir: /srv/wordpress
 
-# --- Required domain ----------------------------------------------------------
-# Apex (or subdomain) the WordPress site is served on. Caddy obtains a
-# certificate for this name. Must resolve to the Caddy host.
-wordpress_fqdn: ""
-
 # --- WordPress + database images ---------------------------------------------
 wordpress_image: docker.io/library/wordpress:latest
 wordpress_db_image: docker.io/library/mariadb:10.11
@@ -16,15 +11,8 @@ wordpress_db_user: wordpress
 wordpress_db_password: ""
 wordpress_db_root_password: ""
 
-# --- Shared Caddy + network (provided by sage.final.caddy) -------
-# Caddy in the panel role imports every *.caddy file from this directory and
-# reloads when this role drops a snippet there. Override if Caddy lives in
-# a different location (or in a different role).
-wordpress_caddy_conf_d_dir: /srv/caddy/conf.d
-wordpress_caddy_container: caddy
-
-# Name of the external Podman network this stack joins. The panel role's
-# compose creates it; this role attaches to it as `external: true`.
+# Name of the external Podman network this stack joins. The caddy role
+# creates it; this role attaches as external: true.
 wordpress_shared_network: web
 
 # --- Container runtime install ------------------------------------------------

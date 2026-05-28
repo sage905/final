@@ -1,9 +1,0 @@
-# {{ ansible_managed }}
-{{ glance_fqdn }} {
-    encode gzip
-    reverse_proxy glance:{{ glance_container_port }} {
-        header_up X-Forwarded-Proto {scheme}
-        header_up X-Forwarded-For {remote_host}
-        header_up Host {host}
-    }
-}

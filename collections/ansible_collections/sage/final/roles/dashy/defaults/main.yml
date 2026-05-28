@@ -1,6 +1,5 @@
 ---
 dashy_data_dir: /srv/dashy
-dashy_fqdn: ""
 dashy_image: docker.io/lissy93/dashy:latest
 dashy_container_port: 8080
 
@@ -9,8 +8,6 @@ dashy_container_port: 8080
 dashy_seed_config: true
 
 # Shared infra provided by sage.final.caddy.
-dashy_caddy_conf_d_dir: /srv/caddy/conf.d
-dashy_caddy_container: caddy
 dashy_shared_network: web
 
 dashy_install_podman: true

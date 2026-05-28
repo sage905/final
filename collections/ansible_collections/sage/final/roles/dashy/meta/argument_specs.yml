@@ -1,14 +1,11 @@
 ---
 argument_specs:
   main:
-    short_description: Deploy Dashy behind the panel role's shared Caddy.
+    short_description: Deploy Dashy behind the shared Caddy.
     options:
       dashy_data_dir:
         type: path
         default: /srv/dashy
-      dashy_fqdn:
-        type: str
-        required: true
       dashy_image:
         type: str
         default: docker.io/lissy93/dashy:latest
@@ -18,12 +15,6 @@ argument_specs:
       dashy_seed_config:
         type: bool
         default: true
-      dashy_caddy_conf_d_dir:
-        type: path
-        default: /srv/caddy/conf.d
-      dashy_caddy_container:
-        type: str
-        default: caddy
       dashy_shared_network:
         type: str
         default: web

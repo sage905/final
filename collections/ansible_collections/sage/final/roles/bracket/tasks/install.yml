@@ -59,12 +59,3 @@
     group: "{{ bracket_user }}"
     mode: "0640"
   notify: Recreate bracket stack
-
-- name: Drop the Caddy vhost snippet
-  ansible.builtin.template:
-    src: bracket.caddy.j2
-    dest: "{{ bracket_caddy_conf_d_dir }}/bracket.caddy"
-    owner: "{{ bracket_user }}"
-    group: "{{ bracket_user }}"
-    mode: "0644"
-  notify: Reload caddy

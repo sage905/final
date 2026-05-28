@@ -1,6 +1,5 @@
 ---
 glance_data_dir: /srv/glance
-glance_fqdn: ""
 glance_image: docker.io/glanceapp/glance:latest
 glance_container_port: 8080
 
@@ -9,8 +8,6 @@ glance_container_port: 8080
 glance_seed_config: true
 
 # Shared infra provided by sage.final.caddy.
-glance_caddy_conf_d_dir: /srv/caddy/conf.d
-glance_caddy_container: caddy
 glance_shared_network: web
 
 glance_install_podman: true

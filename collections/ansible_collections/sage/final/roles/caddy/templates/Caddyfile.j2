@@ -3,4 +3,30 @@
     email {{ caddy_admin_email }}
 }
 
+# Reusable snippet imported by site blocks with internal_only: true.
+(internal_only) {
+    @denied not remote_ip {{ caddy_internal_cidrs | join(' ') }}
+    respond @denied "Access denied" 403
+}
+
+{% for site in caddy_sites %}
+{{ site.fqdn }} {
+    encode gzip
+{% if site.internal_only | default(false) %}
+    import internal_only
+{% endif %}
+    reverse_proxy {{ site.upstream }} {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+        header_up Host {host}
+{% if site.upstream.startswith('https://') or site.tls_insecure_skip_verify | default(false) %}
+        transport http {
+            tls_insecure_skip_verify
+        }
+{% endif %}
+    }
+}
+
+{% endfor %}
+# Drop-in directory for any custom site blocks not covered by caddy_sites.
 import /etc/caddy/conf.d/*.caddy

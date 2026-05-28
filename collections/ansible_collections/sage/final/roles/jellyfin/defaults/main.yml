@@ -13,8 +13,6 @@ jellyfin_media_path: "{{ jellyfin_data_dir }}/media"
 jellyfin_publish_dlna_port: false
 
 # Shared infra provided by sage.final.caddy.
-jellyfin_caddy_conf_d_dir: /srv/caddy/conf.d
-jellyfin_caddy_container: caddy
 jellyfin_shared_network: web
 
 jellyfin_install_podman: true

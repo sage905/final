@@ -4,16 +4,10 @@
 # bind-mounted container volumes, and Caddy state.
 pterodactyl_panel_data_dir: /srv/pterodactyl
 
-# --- Domain layout ------------------------------------------------------------
-# Hostname Caddy obtains a certificate for and serves the panel on.
+# --- Domain ------------------------------------------------------------------
+# Hostname the panel serves on. The role bakes this into the panel's
+# APP_URL; the matching Caddy site block lives in caddy_sites in inventory.
 pterodactyl_panel_fqdn: ""
-# Hostname Caddy serves the Wings UI on (reverse-proxied to the Wings daemon).
-pterodactyl_panel_wings_fqdn: ""
-# Backend URL Caddy reverse-proxies the wings vhost to. Defaults to the
-# Wings daemon on the same host via Podman's host alias. Point this at a
-# remote node URL when Wings runs elsewhere. If you proxy to https:// Caddy
-# will skip TLS verification (Wings ships a self-signed cert).
-pterodactyl_panel_wings_backend: "http://host.containers.internal:8080"
 
 # --- Panel ---------------------------------------------------------------------
 # Default image bundles Pterodactyl Panel + Blueprint Framework, maintained by
@@ -41,9 +35,7 @@ pterodactyl_panel_db_root_password: ""
 # --- Cache ---------------------------------------------------------------------
 pterodactyl_panel_cache_image: docker.io/library/redis:7-alpine
 
-# --- Shared Caddy (provided by sage.final.caddy) ------------------------------
-pterodactyl_panel_caddy_conf_d_dir: /srv/caddy/conf.d
-pterodactyl_panel_caddy_container: caddy
+# --- Shared network (provided by sage.final.caddy) ----------------------------
 pterodactyl_panel_shared_network: web
 
 # --- Mail ----------------------------------------------------------------------

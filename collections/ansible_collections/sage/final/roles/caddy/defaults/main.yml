@@ -14,3 +14,31 @@ caddy_install_podman: true
 
 # Rootless: user that owns this role's data dir and runs podman-compose.
 caddy_user: containers
+
+# All reverse-proxy site blocks Caddy serves. App roles (pterodactyl_panel,
+# wordpress, dashy, glance, bracket, jellyfin) only deploy their containers
+# onto the shared `web` network — every public site is declared here.
+# Schema per entry:
+#   fqdn:                       (required) hostname Caddy serves on 443 with auto-TLS
+#   upstream:                   (required) backend address, e.g. "panel:80",
+#                               "http://wordpress:80", or "http://host.containers.internal:8080"
+#   internal_only:              (optional, default false) return 403 unless the
+#                               source IP is in caddy_internal_cidrs
+#   tls_insecure_skip_verify:   (optional, default false) skip backend TLS
+#                               verification. Auto-enabled when upstream
+#                               starts with https://.
+# Example:
+#   caddy_sites:
+#     - { fqdn: "panel.example.com", upstream: "panel:80" }
+#     - { fqdn: "dashy.example.com", upstream: "dashy:8080", internal_only: true }
+caddy_sites: []
+
+# CIDRs considered "internal" for sites with internal_only: true. Any
+# request whose source IP is not in this list gets a 403. ACME HTTP-01
+# challenges on port 80 are unaffected — Caddy's auto-HTTPS handler runs
+# before any site-block matchers, so TLS issuance still works on
+# IP-restricted sites.
+caddy_internal_cidrs:
+  - 192.168.0.0/16
+  - 10.0.0.0/8
+  - 172.16.0.0/12

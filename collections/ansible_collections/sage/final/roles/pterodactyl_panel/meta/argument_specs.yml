@@ -10,15 +10,7 @@ argument_specs:
       pterodactyl_panel_fqdn:
         type: str
         required: true
-        description: Hostname Caddy obtains a certificate for and serves the panel on.
-      pterodactyl_panel_wings_fqdn:
-        type: str
-        default: ""
-        description: Hostname Caddy serves the Wings UI on. Leave empty to skip the wings vhost.
-      pterodactyl_panel_wings_backend:
-        type: str
-        default: "http://host.containers.internal:8080"
-        description: Upstream URL Caddy proxies the wings vhost to.
+        description: Hostname the panel serves on. Baked into APP_URL.
       pterodactyl_panel_image:
         type: str
         default: ghcr.io/blueprintframework/blueprint:latest
@@ -51,12 +43,6 @@ argument_specs:
       pterodactyl_panel_cache_image:
         type: str
         default: docker.io/library/redis:7-alpine
-      pterodactyl_panel_caddy_conf_d_dir:
-        type: path
-        default: /srv/caddy/conf.d
-      pterodactyl_panel_caddy_container:
-        type: str
-        default: caddy
       pterodactyl_panel_shared_network:
         type: str
         default: web

@@ -90,12 +90,3 @@
     group: "{{ pterodactyl_panel_user }}"
     mode: "0640"
   notify: Recreate pterodactyl stack
-
-- name: Drop the Caddy vhost snippet
-  ansible.builtin.template:
-    src: pterodactyl.caddy.j2
-    dest: "{{ pterodactyl_panel_caddy_conf_d_dir }}/pterodactyl.caddy"
-    owner: "{{ pterodactyl_panel_user }}"
-    group: "{{ pterodactyl_panel_user }}"
-    mode: "0644"
-  notify: Reload caddy

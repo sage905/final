@@ -67,12 +67,3 @@
     group: "{{ wordpress_user }}"
     mode: "0640"
   notify: Recreate wordpress stack
-
-- name: Drop the Caddy vhost snippet
-  ansible.builtin.template:
-    src: wordpress.caddy.j2
-    dest: "{{ wordpress_caddy_conf_d_dir }}/wordpress.caddy"
-    owner: "{{ wordpress_user }}"
-    group: "{{ wordpress_user }}"
-    mode: "0644"
-  notify: Reload caddy

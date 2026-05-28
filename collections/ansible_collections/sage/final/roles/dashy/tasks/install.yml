@@ -48,12 +48,3 @@
     group: "{{ dashy_user }}"
     mode: "0640"
   notify: Recreate dashy stack
-
-- name: Drop the Caddy vhost snippet
-  ansible.builtin.template:
-    src: dashy.caddy.j2
-    dest: "{{ dashy_caddy_conf_d_dir }}/dashy.caddy"
-    owner: "{{ dashy_user }}"
-    group: "{{ dashy_user }}"
-    mode: "0644"
-  notify: Reload caddy

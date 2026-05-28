@@ -28,12 +28,6 @@ argument_specs:
         type: str
         default: ""
         no_log: true
-      bracket_caddy_conf_d_dir:
-        type: path
-        default: /srv/caddy/conf.d
-      bracket_caddy_container:
-        type: str
-        default: caddy
       bracket_shared_network:
         type: str
         default: web

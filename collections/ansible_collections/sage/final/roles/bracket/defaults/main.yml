@@ -12,8 +12,6 @@ bracket_db_user: bracket
 bracket_db_password: ""
 
 # Shared infra provided by sage.final.caddy.
-bracket_caddy_conf_d_dir: /srv/caddy/conf.d
-bracket_caddy_container: caddy
 bracket_shared_network: web
 
 bracket_install_podman: true

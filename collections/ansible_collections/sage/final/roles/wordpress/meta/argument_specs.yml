@@ -1,15 +1,11 @@
 ---
 argument_specs:
   main:
-    short_description: Deploy WordPress behind the panel role's shared Caddy.
+    short_description: Deploy WordPress behind the shared Caddy.
     options:
       wordpress_data_dir:
         type: path
         default: /srv/wordpress
-      wordpress_fqdn:
-        type: str
-        required: true
-        description: Hostname Caddy obtains a certificate for and serves WordPress on.
       wordpress_image:
         type: str
         default: docker.io/library/wordpress:latest
@@ -30,18 +26,10 @@ argument_specs:
         type: str
         default: ""
         no_log: true
-      wordpress_caddy_conf_d_dir:
-        type: path
-        default: /srv/caddy/conf.d
-        description: Directory Caddy imports vhost snippets from.
-      wordpress_caddy_container:
-        type: str
-        default: caddy
-        description: Name of the Caddy container to send `caddy reload` to.
       wordpress_shared_network:
         type: str
         default: web
-        description: External Podman network shared with the panel role's Caddy.
+        description: External Podman network shared with the caddy role.
       wordpress_install_podman:
         type: bool
         default: true

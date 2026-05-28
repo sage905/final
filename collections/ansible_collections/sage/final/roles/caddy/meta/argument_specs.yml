@@ -26,3 +26,34 @@ argument_specs:
       caddy_user:
         type: str
         default: containers
+      caddy_sites:
+        type: list
+        elements: dict
+        default: []
+        description: >-
+          List of reverse-proxy site blocks Caddy serves. Each entry
+          requires `fqdn` and `upstream`; optional keys are
+          `internal_only` (bool) and `tls_insecure_skip_verify` (bool).
+        options:
+          fqdn:
+            type: str
+            required: true
+          upstream:
+            type: str
+            required: true
+          internal_only:
+            type: bool
+            default: false
+          tls_insecure_skip_verify:
+            type: bool
+            default: false
+      caddy_internal_cidrs:
+        type: list
+        elements: str
+        default:
+          - 192.168.0.0/16
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+        description: >-
+          CIDRs allowed to reach sites flagged `internal_only: true`.
+          Requests from any other source get a 403.

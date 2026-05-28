@@ -27,6 +27,23 @@
     - data
     - config
 
+# Pre-1.0 of this collection had each app role drop its own *.caddy snippet
+# into conf.d. Sites are now declared in caddy_sites and rendered into the
+# main Caddyfile, so the old per-app snippets would duplicate site blocks
+# and cause Caddy to fail to start. Remove them on upgrade.
+- name: Remove stale per-app caddy snippets (pre-caddy_sites refactor)
+  ansible.builtin.file:
+    path: "{{ caddy_data_dir }}/conf.d/{{ item }}.caddy"
+    state: absent
+  loop:
+    - pterodactyl
+    - wordpress
+    - dashy
+    - glance
+    - bracket
+    - jellyfin
+  notify: Reload caddy
+
 - name: Render Caddyfile
   ansible.builtin.template:
     src: Caddyfile.j2
