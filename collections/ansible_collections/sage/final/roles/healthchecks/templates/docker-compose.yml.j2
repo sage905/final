@@ -12,6 +12,12 @@ services:
       SITE_NAME: "Healthchecks"
       ALLOWED_HOSTS: "{{ healthchecks_site_root | urlsplit('hostname') }}"
       SECRET_KEY: "{{ healthchecks_secret_key }}"
+      # Image's settings.py defaults the sqlite path to
+      # BASE_DIR/hc.sqlite (/opt/healthchecks/hc.sqlite) which the `hc`
+      # user can't write to. Point Django at the mounted /data instead.
+      # sqlite:////  — four slashes: three for scheme + one for the
+      # leading slash of /data.
+      DATABASE_URL: "sqlite:////data/hc.sqlite"
       DEBUG: "False"
       REGISTRATION_OPEN: "{{ 'True' if healthchecks_registration_open else 'False' }}"
 {% if healthchecks_superuser_email | length > 0 and healthchecks_superuser_password | length > 0 %}
