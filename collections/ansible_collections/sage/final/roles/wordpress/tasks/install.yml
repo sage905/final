@@ -12,17 +12,15 @@
   loop: "{{ wordpress_group_members }}"
   when: wordpress_group_members | length > 0
 
-- name: Create the WordPress compose project directory tree
+# Top-level dir is Ansible-managed: compose, .env, secrets all live here
+# with the wordpress group as owner so admins can SFTP-edit.
+- name: Create the WordPress top-level directory
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ wordpress_data_dir }}"
     state: directory
     owner: "{{ wordpress_user }}"
     group: "{{ wordpress_group }}"
     mode: "2775"
-  loop:
-    - "{{ wordpress_data_dir }}"
-    - "{{ wordpress_data_dir }}/wordpress"
-    - "{{ wordpress_data_dir }}/wordpress-db"
 
 # Secrets dir is tighter — group-readable but not group-writable.
 - name: Create WordPress secrets directory
@@ -33,22 +31,42 @@
     group: "{{ wordpress_group }}"
     mode: "0750"
 
-# Heal ownership left over from prior rootless runs (subuid-mapped UIDs)
-# back to the rootful owner+group with setgid + group-write. After first
-# container start the wordpress entrypoint will chown its data dir to
-# www-data:www-data (host UID 33), which is fine; the wordpress-db
-# entrypoint will chown its data dir to mysql:mysql (host UID 999).
-- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
+# Container-managed runtime subtrees. Created ONLY if missing — once they
+# exist, the wordpress + mariadb entrypoints take over ownership
+# (www-data and mysql respectively). The setgid bit on initial creation
+# means files those containers write inherit the wordpress group, so
+# admins in that group can read/edit via SFTP without sudo.
+#
+# Initial owner UID 33 matches www-data inside the wordpress image, so
+# the entrypoint sees the dir already-owned-correctly and skips its
+# recursive chown — preserving the setgid bit.
+- name: Stat WordPress runtime dir
+  ansible.builtin.stat:
+    path: "{{ wordpress_data_dir }}/wordpress"
+  register: wordpress_runtime_stat
+
+- name: Create WordPress runtime dir (first run only)
   ansible.builtin.file:
-    path: "{{ wordpress_data_dir }}/{{ item }}"
+    path: "{{ wordpress_data_dir }}/wordpress"
+    state: directory
+    owner: "33"
+    group: "{{ wordpress_group }}"
+    mode: "2775"
+  when: not wordpress_runtime_stat.stat.exists
+
+- name: Stat WordPress DB dir
+  ansible.builtin.stat:
+    path: "{{ wordpress_data_dir }}/wordpress-db"
+  register: wordpress_db_stat
+
+- name: Create WordPress DB dir (first run only)
+  ansible.builtin.file:
+    path: "{{ wordpress_data_dir }}/wordpress-db"
     state: directory
     owner: "{{ wordpress_user }}"
     group: "{{ wordpress_group }}"
-    mode: "u=rwX,g=rwX,o="
-    recurse: true
-  loop:
-    - wordpress
-    - wordpress-db
+    mode: "2775"
+  when: not wordpress_db_stat.stat.exists
 
 - name: Generate persistent secrets when not supplied
   ansible.builtin.include_tasks: _generate_secret.yml
