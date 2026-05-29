@@ -12,12 +12,6 @@ services:
       SITE_NAME: "Healthchecks"
       ALLOWED_HOSTS: "{{ healthchecks_site_root | urlsplit('hostname') }}"
       SECRET_KEY: "{{ healthchecks_secret_key }}"
-      # Image's settings.py defaults the sqlite path to
-      # BASE_DIR/hc.sqlite (/opt/healthchecks/hc.sqlite) which the `hc`
-      # user can't write to. Point Django at the mounted /data instead.
-      # sqlite:////  — four slashes: three for scheme + one for the
-      # leading slash of /data.
-      DATABASE_URL: "sqlite:////data/hc.sqlite"
       DEBUG: "False"
       REGISTRATION_OPEN: "{{ 'True' if healthchecks_registration_open else 'False' }}"
 {% if healthchecks_superuser_email | length > 0 and healthchecks_superuser_password | length > 0 %}
@@ -32,12 +26,13 @@ services:
       EMAIL_HOST_PASSWORD: "{{ healthchecks_email_password }}"
       EMAIL_USE_TLS: "{{ 'True' if healthchecks_email_use_tls else 'False' }}"
 {% endif %}
-    # Ansible pre-chowns /srv/healthchecks/data to UID 1000 (matches
-    # the `app` user inside the image) so we don't need podman's `:U`
-    # mount flag — its behavior varies across Ubuntu's podman versions
-    # and we'd rather pin the ownership explicitly than rely on it.
+    # Ansible pre-chowns /srv/healthchecks/data to UID 999 (matches
+    # the `hc` user inside the image). The local_settings.py mount
+    # overrides the image's hardcoded sqlite path (/opt/healthchecks/
+    # hc.sqlite, not writable) to point at /data instead.
     volumes:
       - "{{ healthchecks_data_dir }}/data:/data"
+      - "{{ healthchecks_data_dir }}/local_settings.py:/opt/healthchecks/hc/local_settings.py:ro"
     networks:
       - shared
 

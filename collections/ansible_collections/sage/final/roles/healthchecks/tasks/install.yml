@@ -41,6 +41,15 @@
     mode: "2775"
   when: not healthchecks_data_stat.stat.exists
 
+- name: Render local_settings.py override
+  ansible.builtin.template:
+    src: local_settings.py.j2
+    dest: "{{ healthchecks_data_dir }}/local_settings.py"
+    owner: "{{ healthchecks_user }}"
+    group: "{{ healthchecks_group }}"
+    mode: "0644"
+  notify: Recreate healthchecks stack
+
 - name: Render docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2

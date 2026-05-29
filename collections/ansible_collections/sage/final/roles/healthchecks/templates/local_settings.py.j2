@@ -1,0 +1,25 @@
+# {{ ansible_managed }}
+#
+# Mounted into the container at /opt/healthchecks/hc/local_settings.py.
+# The image's hc/settings.py ends with:
+#     try:
+#         from hc.local_settings import *
+#     except ImportError:
+#         pass
+# so any names defined here override the defaults.
+#
+# We use this to redirect the sqlite path away from BASE_DIR/hc.sqlite
+# (which lives on the read-only image filesystem) to /data/hc.sqlite,
+# which is bind-mounted from the host and owned by the container's `hc`
+# user (UID 999).
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "/data/hc.sqlite",
+        "OPTIONS": {
+            "init_command": "PRAGMA busy_timeout = 5000;",
+            "transaction_mode": "IMMEDIATE",
+        },
+    }
+}
