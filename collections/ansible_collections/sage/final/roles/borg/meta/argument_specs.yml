@@ -24,12 +24,13 @@ argument_specs:
         type: int
         default: 23
       borg_ssh_private_key:
-        type: str
+        type: raw
         default: ""
         no_log: true
         description: >-
           Optional vaulted private key contents. If empty, the role
-          generates an ed25519 keypair on the host.
+          generates an ed25519 keypair on the host. `type: raw` because
+          validate_argument_spec can't type-check vaulted strings.
       borg_ssh_key_path:
         type: path
         default: /etc/borgmatic/id_ed25519
@@ -43,7 +44,7 @@ argument_specs:
         type: str
         description: Full borg repo URL. Defaults to a templated value built from ssh_host/user/port/repo_name.
       borg_passphrase:
-        type: str
+        type: raw
         required: true
         no_log: true
         description: Repokey passphrase. Required for create AND restore — no recovery if lost.

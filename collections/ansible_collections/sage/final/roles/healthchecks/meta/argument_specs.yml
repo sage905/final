@@ -17,15 +17,18 @@ argument_specs:
         required: true
         description: Public URL of the instance (includes scheme, no trailing slash).
       healthchecks_secret_key:
-        type: str
+        type: raw
         required: true
         no_log: true
-        description: Django SECRET_KEY. Vault it.
+        description: >-
+          Django SECRET_KEY. Vault it. `type: raw` here (and on other
+          no_log fields) is intentional — validate_argument_spec can't
+          type-check AnsibleVaultEncryptedUnicode values against str.
       healthchecks_superuser_email:
         type: str
         default: ""
       healthchecks_superuser_password:
-        type: str
+        type: raw
         default: ""
         no_log: true
       healthchecks_registration_open:
@@ -41,7 +44,7 @@ argument_specs:
         type: str
         default: ""
       healthchecks_email_password:
-        type: str
+        type: raw
         default: ""
         no_log: true
       healthchecks_email_use_tls:

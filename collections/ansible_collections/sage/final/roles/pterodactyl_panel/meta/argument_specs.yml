@@ -32,12 +32,12 @@ argument_specs:
         type: str
         default: pterodactyl
       pterodactyl_panel_db_password:
-        type: str
+        type: raw
         default: ""
         no_log: true
         description: Override the auto-generated DB password.
       pterodactyl_panel_db_root_password:
-        type: str
+        type: raw
         default: ""
         no_log: true
       pterodactyl_panel_cache_image:
@@ -60,7 +60,7 @@ argument_specs:
         type: str
         default: ""
       pterodactyl_panel_mail_password:
-        type: str
+        type: raw
         default: ""
         no_log: true
       pterodactyl_panel_mail_encryption:
@@ -75,7 +75,7 @@ argument_specs:
         default: ""
         description: Create this admin user on first boot when set with a password.
       pterodactyl_panel_admin_password:
-        type: str
+        type: raw
         default: ""
         no_log: true
       pterodactyl_panel_admin_first_name:

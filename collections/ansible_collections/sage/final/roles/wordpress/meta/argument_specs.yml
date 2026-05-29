@@ -19,11 +19,11 @@ argument_specs:
         type: str
         default: wordpress
       wordpress_db_password:
-        type: str
+        type: raw
         default: ""
         no_log: true
       wordpress_db_root_password:
-        type: str
+        type: raw
         default: ""
         no_log: true
       wordpress_shared_network:
