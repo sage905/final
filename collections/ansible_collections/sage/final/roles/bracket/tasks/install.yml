@@ -12,17 +12,14 @@
   loop: "{{ bracket_group_members }}"
   when: bracket_group_members | length > 0
 
-- name: Create Bracket directories
+# Top-level dir is Ansible-managed (compose lives here).
+- name: Create the Bracket top-level directory
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ bracket_data_dir }}"
     state: directory
     owner: "{{ bracket_user }}"
     group: "{{ bracket_group }}"
     mode: "2775"
-  loop:
-    - "{{ bracket_data_dir }}"
-    - "{{ bracket_data_dir }}/static"
-    - "{{ bracket_data_dir }}/postgres"
 
 # Secrets dir is tighter — owner+group only, no group-writable (secrets
 # files are auto-generated, no admin should be hand-editing them).
@@ -34,19 +31,27 @@
     group: "{{ bracket_group }}"
     mode: "0750"
 
-# Heal ownership left over from prior rootless runs (subuid-mapped UIDs)
-# back to the rootful owner+group with setgid + group-write.
-- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
-  ansible.builtin.file:
+# Container-managed runtime subtrees. Created ONLY if missing — once they
+# exist, postgres takes over /postgres ownership on first start.
+- name: Stat Bracket runtime subdirs
+  ansible.builtin.stat:
     path: "{{ bracket_data_dir }}/{{ item }}"
-    state: directory
-    owner: "{{ bracket_user }}"
-    group: "{{ bracket_group }}"
-    mode: "u=rwX,g=rwX,o="
-    recurse: true
   loop:
     - postgres
     - static
+  register: bracket_subdir_stat
+
+- name: Create Bracket runtime subdirs (first run only)
+  ansible.builtin.file:
+    path: "{{ bracket_data_dir }}/{{ item.item }}"
+    state: directory
+    owner: "{{ bracket_user }}"
+    group: "{{ bracket_group }}"
+    mode: "2775"
+  loop: "{{ bracket_subdir_stat.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not item.stat.exists
 
 - name: Generate the DB password if not supplied
   ansible.builtin.include_tasks: _generate_secret.yml

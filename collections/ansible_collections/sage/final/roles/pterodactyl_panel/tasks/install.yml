@@ -12,19 +12,14 @@
   loop: "{{ pterodactyl_panel_group_members }}"
   when: pterodactyl_panel_group_members | length > 0
 
-- name: Create the compose project directory tree
+# Top-level dir is Ansible-managed (compose, .env at root).
+- name: Create the pterodactyl top-level directory
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ pterodactyl_panel_data_dir }}"
     state: directory
     owner: "{{ pterodactyl_panel_user }}"
     group: "{{ pterodactyl_panel_group }}"
     mode: "2775"
-  loop:
-    - "{{ pterodactyl_panel_data_dir }}"
-    - "{{ pterodactyl_panel_data_dir }}/var"
-    - "{{ pterodactyl_panel_data_dir }}/nginx"
-    - "{{ pterodactyl_panel_data_dir }}/logs"
-    - "{{ pterodactyl_panel_data_dir }}/database"
 
 # Secrets dir is tighter — group-readable but not group-writable.
 - name: Create the secrets directory
@@ -35,21 +30,32 @@
     group: "{{ pterodactyl_panel_group }}"
     mode: "0750"
 
-# Heal ownership left over from prior rootless runs (subuid-mapped UIDs)
-# back to the rootful owner+group with setgid + group-write.
-- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
-  ansible.builtin.file:
+# Container-managed runtime subtrees. Created ONLY if missing — once they
+# exist, the panel/mariadb entrypoints take ownership (www-data for the
+# panel, mysql for the database). The setgid bit on initial creation
+# means container-written files inherit the pterodactyl group, so admins
+# can read via SFTP without sudo.
+- name: Stat pterodactyl runtime subdirs
+  ansible.builtin.stat:
     path: "{{ pterodactyl_panel_data_dir }}/{{ item }}"
-    state: directory
-    owner: "{{ pterodactyl_panel_user }}"
-    group: "{{ pterodactyl_panel_group }}"
-    mode: "u=rwX,g=rwX,o="
-    recurse: true
   loop:
     - var
     - nginx
     - logs
     - database
+  register: pterodactyl_panel_subdir_stat
+
+- name: Create pterodactyl runtime subdirs (first run only)
+  ansible.builtin.file:
+    path: "{{ pterodactyl_panel_data_dir }}/{{ item.item }}"
+    state: directory
+    owner: "{{ pterodactyl_panel_user }}"
+    group: "{{ pterodactyl_panel_group }}"
+    mode: "2775"
+  loop: "{{ pterodactyl_panel_subdir_stat.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not item.stat.exists
 
 - name: Generate persistent secrets when not supplied
   ansible.builtin.include_tasks: _generate_secret.yml

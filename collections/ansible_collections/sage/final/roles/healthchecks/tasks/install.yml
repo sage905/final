@@ -12,28 +12,34 @@
   loop: "{{ healthchecks_group_members }}"
   when: healthchecks_group_members | length > 0
 
-- name: Create Healthchecks directories
+# Top-level dir is Ansible-managed (compose lives here).
+- name: Create the Healthchecks top-level directory
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ healthchecks_data_dir }}"
     state: directory
     owner: "{{ healthchecks_user }}"
     group: "{{ healthchecks_group }}"
     mode: "2775"
-  loop:
-    - "{{ healthchecks_data_dir }}"
-    - "{{ healthchecks_data_dir }}/data"
 
-# Heal ownership left over from prior runs back to the rootful
-# owner+group with setgid + group-write. The :U flag on the data mount
-# will further chown to the container's `app` UID at start time.
-- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
+# Container-managed runtime subtree. Created ONLY if missing — once it
+# exists, podman's :U flag on the data mount chowns it to the container's
+# `app` UID (1000) on every container start, and we never touch it from
+# Ansible again. Without the stat-gate, a recursive chown here would
+# fight the :U-set ownership on every role run and break the running
+# container's access to its sqlite database until the next Recreate.
+- name: Stat Healthchecks data dir
+  ansible.builtin.stat:
+    path: "{{ healthchecks_data_dir }}/data"
+  register: healthchecks_data_stat
+
+- name: Create Healthchecks data dir (first run only)
   ansible.builtin.file:
     path: "{{ healthchecks_data_dir }}/data"
     state: directory
     owner: "{{ healthchecks_user }}"
     group: "{{ healthchecks_group }}"
-    mode: "u=rwX,g=rwX,o="
-    recurse: true
+    mode: "2775"
+  when: not healthchecks_data_stat.stat.exists
 
 - name: Render docker-compose.yml
   ansible.builtin.template:
