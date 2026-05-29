@@ -23,14 +23,10 @@ argument_specs:
       borg_ssh_port:
         type: int
         default: 23
-      borg_ssh_private_key:
-        type: raw
-        default: ""
-        no_log: true
-        description: >-
-          Optional vaulted private key contents. If empty, the role
-          generates an ed25519 keypair on the host. `type: raw` because
-          validate_argument_spec can't type-check vaulted strings.
+      # Vault-prone fields (borg_passphrase, borg_ssh_private_key) are
+      # intentionally NOT in this spec. validate_argument_spec mishandles
+      # AnsibleVaultEncryptedUnicode in some ansible-core versions; we
+      # assert required vault values in tasks/main.yml instead.
       borg_ssh_key_path:
         type: path
         default: /etc/borgmatic/id_ed25519
@@ -43,11 +39,6 @@ argument_specs:
       borg_repo:
         type: str
         description: Full borg repo URL. Defaults to a templated value built from ssh_host/user/port/repo_name.
-      borg_passphrase:
-        type: raw
-        required: true
-        no_log: true
-        description: Repokey passphrase. Required for create AND restore — no recovery if lost.
       borg_encryption:
         type: str
         default: repokey

@@ -6,6 +6,18 @@
                  role_path ~ '/meta/argument_specs.yml')
           | from_yaml)['argument_specs']['main']['options'] }}
 
+# Vault-prone secrets are not in argument_specs (see comment in the spec
+# file). Assert their presence here so misconfiguration still fails loud.
+- name: Assert required secrets are set
+  ansible.builtin.assert:
+    that:
+      - borg_passphrase | string | length > 0
+    fail_msg: >-
+      borg_passphrase must be set (vault it in inventory). Lose it and
+      the repo is unreadable — there is no recovery. Generate with:
+        openssl rand -base64 32
+    quiet: true
+
 - ansible.builtin.import_tasks: dependencies.yml
 - ansible.builtin.import_tasks: install.yml
 - ansible.builtin.import_tasks: bootstrap.yml

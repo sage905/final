@@ -31,15 +31,13 @@ argument_specs:
       pterodactyl_panel_db_user:
         type: str
         default: pterodactyl
-      pterodactyl_panel_db_password:
-        type: raw
-        default: ""
-        no_log: true
-        description: Override the auto-generated DB password.
-      pterodactyl_panel_db_root_password:
-        type: raw
-        default: ""
-        no_log: true
+      # Vault-prone fields (db_password, db_root_password, mail_password,
+      # admin_password) are intentionally NOT in this spec — see the
+      # validate_argument_spec / AnsibleVaultEncryptedUnicode note in
+      # other role argument_specs. All default to "" in defaults/main.yml:
+      # DB passwords auto-generate on the target host when blank, and
+      # the admin user / mail driver are skipped when their secrets
+      # are empty.
       pterodactyl_panel_cache_image:
         type: str
         default: docker.io/library/redis:7-alpine
@@ -59,10 +57,6 @@ argument_specs:
       pterodactyl_panel_mail_username:
         type: str
         default: ""
-      pterodactyl_panel_mail_password:
-        type: raw
-        default: ""
-        no_log: true
       pterodactyl_panel_mail_encryption:
         type: str
         default: tls
@@ -74,10 +68,6 @@ argument_specs:
         type: str
         default: ""
         description: Create this admin user on first boot when set with a password.
-      pterodactyl_panel_admin_password:
-        type: raw
-        default: ""
-        no_log: true
       pterodactyl_panel_admin_first_name:
         type: str
         default: Panel

@@ -6,6 +6,18 @@
                  role_path ~ '/meta/argument_specs.yml')
           | from_yaml)['argument_specs']['main']['options'] }}
 
+# Vault-prone secrets are not in argument_specs (see comment in the spec
+# file). Assert their presence here so misconfiguration still fails loud.
+- name: Assert required secrets are set
+  ansible.builtin.assert:
+    that:
+      - healthchecks_secret_key | string | length > 0
+    fail_msg: >-
+      healthchecks_secret_key must be set (vault it in inventory).
+      Generate with:
+        python3 -c 'import secrets; print(secrets.token_urlsafe(50))'
+    quiet: true
+
 - ansible.builtin.import_tasks: dependencies.yml
 - ansible.builtin.import_tasks: install.yml
 - ansible.builtin.import_tasks: bootstrap.yml

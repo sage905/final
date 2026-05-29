@@ -18,14 +18,11 @@ argument_specs:
       wordpress_db_user:
         type: str
         default: wordpress
-      wordpress_db_password:
-        type: raw
-        default: ""
-        no_log: true
-      wordpress_db_root_password:
-        type: raw
-        default: ""
-        no_log: true
+      # wordpress_db_password and wordpress_db_root_password are
+      # vault-prone and intentionally NOT in this spec — see the
+      # validate_argument_spec / AnsibleVaultEncryptedUnicode note in
+      # other role argument_specs. Both default to "" in defaults/main.yml,
+      # auto-generated on the target host if not supplied.
       wordpress_shared_network:
         type: str
         default: web

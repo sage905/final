@@ -24,10 +24,10 @@ argument_specs:
       bracket_db_user:
         type: str
         default: bracket
-      bracket_db_password:
-        type: raw
-        default: ""
-        no_log: true
+      # bracket_db_password is vault-prone and intentionally NOT in this
+      # spec — see the validate_argument_spec / AnsibleVaultEncryptedUnicode
+      # note in other role argument_specs. Defaults to "" in
+      # defaults/main.yml, auto-generated on the target host if blank.
       bracket_shared_network:
         type: str
         default: web
