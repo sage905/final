@@ -100,7 +100,7 @@
     group: root
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # {{ ansible_managed | default('Ansible managed') }}
       [Timer]
       OnCalendar=
       OnCalendar={{ borg_schedule }}
