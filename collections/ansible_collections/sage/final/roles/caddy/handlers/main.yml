@@ -4,17 +4,9 @@
     cmd: podman-compose up -d --force-recreate
     chdir: "{{ caddy_data_dir }}"
   changed_when: true
-  become: true
-  become_user: "{{ caddy_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[caddy_user][1] }}"
 
 - name: Reload caddy
   containers.podman.podman_container_exec:
     name: "{{ caddy_container }}"
     command: caddy reload --config /etc/caddy/Caddyfile
   failed_when: false
-  become: true
-  become_user: "{{ caddy_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[caddy_user][1] }}"

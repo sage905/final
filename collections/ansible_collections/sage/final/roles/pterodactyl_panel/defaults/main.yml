@@ -61,12 +61,15 @@ pterodactyl_panel_admin_last_name: Admin
 # Set to false on hosts where Podman is already managed elsewhere.
 pterodactyl_panel_install_podman: true
 
-# Rootless: user that owns this role's data dir and runs podman-compose.
-pterodactyl_panel_user: containers
+# Rootful: stack runs via system podman. pterodactyl_panel_user owns
+# the files on disk. The panel image's supervisord starts as root and
+# the runtime DB (mariadb) chowns its data dir to mysql (UID 999) on
+# first start.
+pterodactyl_panel_user: root
 
-# Group that owns the panel's files. pterodactyl_panel_user is always a
-# member; extra names in pterodactyl_panel_group_members are also added
-# (must already exist as system users). The secrets dir stays
-# group-readable but not group-writable.
+# Group that owns the panel's files. Admins in
+# pterodactyl_panel_group_members can read/write /srv/pterodactyl
+# top-level files via SFTP. Secrets dir stays group-readable but not
+# group-writable.
 pterodactyl_panel_group: pterodactyl
 pterodactyl_panel_group_members: []

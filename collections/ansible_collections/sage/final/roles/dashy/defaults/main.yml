@@ -12,11 +12,12 @@ dashy_shared_network: web
 
 dashy_install_podman: true
 
-# Rootless: user that owns this role's data dir and runs podman-compose.
-dashy_user: containers
+# Rootful: stack runs via system podman. dashy_user owns the files on
+# disk. The dashy image runs as root inside, so root ownership on the
+# host matches container writes (no `:U` needed).
+dashy_user: root
 
-# Group that owns Dashy's files. dashy_user is always a member; extra
-# names in dashy_group_members are also added (must already exist as
-# system users — listed accounts are added to the group, not created).
+# Group that owns Dashy's files. Admins in dashy_group_members can read
+# and write /srv/dashy via SFTP (setgid + group-write modes set below).
 dashy_group: dashy
 dashy_group_members: []

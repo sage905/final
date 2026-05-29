@@ -12,11 +12,12 @@ glance_shared_network: web
 
 glance_install_podman: true
 
-# Rootless: user that owns this role's data dir and runs podman-compose.
-glance_user: containers
+# Rootful: stack runs via system podman. glance_user owns the files on
+# disk. The glance image runs as root inside, so root ownership on the
+# host matches container writes (no `:U` needed).
+glance_user: root
 
-# Group that owns Glance's files. glance_user is always a member; extra
-# names in glance_group_members are also added (must already exist as
-# system users).
+# Group that owns Glance's files. Admins in glance_group_members can
+# read/write /srv/glance via SFTP.
 glance_group: glance
 glance_group_members: []

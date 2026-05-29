@@ -12,6 +12,8 @@
 #   ansible-navigator run site.yml --tags bracket
 #   ansible-navigator run site.yml --tags jellyfin
 #   ansible-navigator run site.yml --tags portainer
+#   ansible-navigator run site.yml --tags healthchecks
+#   ansible-navigator run site.yml --tags borg
 #   ansible-navigator run site.yml --tags hardening
 # Skip the apt upgrade with --skip-tags update.
 - name: Bring all packages up to date
@@ -126,3 +128,21 @@
     - portainer
   roles:
     - role: sage.final.portainer
+
+- name: Deploy Healthchecks
+  hosts: healthchecks
+  become: true
+  gather_facts: true
+  tags:
+    - healthchecks
+  roles:
+    - role: sage.final.healthchecks
+
+- name: Schedule Borg backups
+  hosts: borg
+  become: true
+  gather_facts: true
+  tags:
+    - borg
+  roles:
+    - role: sage.final.borg

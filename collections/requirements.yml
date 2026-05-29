@@ -13,6 +13,8 @@ collections:
 
   - name: community.general
 
+  - name: community.crypto
+
   - name: containers.podman
 
   # TO-DO: User's own collections can also be specified as mention below.

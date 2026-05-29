@@ -1,0 +1,18 @@
+---
+- name: Assert that the target host is Ubuntu
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Ubuntu'
+    fail_msg: >-
+      sage.final.borg currently supports Ubuntu only. Detected
+      distribution: {{ ansible_facts['distribution'] | default('unknown') }}.
+
+- name: Install borgmatic
+  when: borg_install_package
+  ansible.builtin.apt:
+    name:
+      - borgmatic     # depends on borgbackup
+      - openssh-client
+    state: present
+    update_cache: true
+    cache_valid_time: 3600

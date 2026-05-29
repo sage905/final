@@ -1,0 +1,59 @@
+---
+healthchecks_data_dir: /srv/healthchecks
+# Official upstream image. `:latest` follows the master branch; pin to a
+# release tag (e.g. v3.7) for reproducible deploys.
+healthchecks_image: docker.io/healthchecks/healthchecks:latest
+healthchecks_container_port: 8000
+
+# --- REQUIRED ----------------------------------------------------------------
+# Public URL of the Healthchecks instance. Baked into ping URLs and emails.
+# Must include scheme and end without trailing slash. Example:
+#   https://healthchecks.example.com
+healthchecks_site_root: ""
+
+# Django SECRET_KEY. Vault this. Generate with:
+#   python3 -c 'import secrets; print(secrets.token_urlsafe(50))'
+healthchecks_secret_key: ""
+
+# --- Optional bootstrap admin ------------------------------------------------
+# When both are set, the healthchecks entrypoint creates a Django superuser
+# on first start. Set to "" to skip and create the first user via the
+# registration page (then disable registration below).
+healthchecks_superuser_email: ""
+healthchecks_superuser_password: ""
+
+# --- Registration ------------------------------------------------------------
+# When false, only the superuser can sign in — no one can self-register.
+# Recommended once your team is onboarded.
+healthchecks_registration_open: false
+
+# --- Email (optional, for "send me an email on failure") ---------------------
+# Healthchecks sends notification emails via SMTP. Leave host blank to skip
+# the email channel entirely (you can still notify via Slack/Discord/ntfy/
+# Pushover/webhooks, configured per-check in the UI).
+healthchecks_email_host: ""
+healthchecks_email_port: 587
+healthchecks_email_user: ""
+healthchecks_email_password: ""
+healthchecks_email_use_tls: true
+healthchecks_default_from_email: ""
+
+# --- Shared infra ------------------------------------------------------------
+healthchecks_shared_network: web
+healthchecks_install_podman: true
+
+# Rootful: stack runs via system podman. healthchecks_user owns files
+# on the host. The healthchecks image is an exception within this
+# collection: it sets `USER app` (UID 1000) in its Dockerfile and the
+# entrypoint does not chown its data dir, so the compose mount uses the
+# `:U` flag to chown /srv/healthchecks/data to that UID on start. After
+# first boot the host-side owner becomes 1000:1000 — by design; admins
+# manage Healthchecks through the web UI, not by editing sqlite on disk.
+healthchecks_user: root
+
+# Group that owns Healthchecks's files on the host. Group ownership is
+# mostly cosmetic for this service — admins manage Healthchecks via its
+# web UI, not by editing the sqlite database on disk. Listed users get
+# read access to /srv/healthchecks for ops/debug.
+healthchecks_group: healthchecks
+healthchecks_group_members: []

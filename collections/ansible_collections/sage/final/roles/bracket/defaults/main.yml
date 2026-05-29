@@ -16,13 +16,15 @@ bracket_shared_network: web
 
 bracket_install_podman: true
 
-# Rootless: user that owns this role's data dir and runs podman-compose.
-bracket_user: containers
+# Rootful: stack runs via system podman. bracket_user owns the files
+# on disk. Postgres inside its container chowns its own data dir on
+# first start (to postgres uid 70 or 999 depending on image), so admins
+# can't usefully SFTP-edit /srv/bracket/postgres; for top-level config
+# and secrets, the bracket group grants admin access.
+bracket_user: root
 
-# Group that owns Bracket's files. bracket_user is always a member;
-# extra names in bracket_group_members are also added (must already
-# exist as system users). The secrets dir stays group-readable but not
-# group-writable so admins can rotate secrets but containers can't
-# accidentally clobber them at runtime.
+# Group that owns Bracket's files. Admins in bracket_group_members can
+# read/write /srv/bracket via SFTP. Secrets dir stays group-readable
+# but not group-writable.
 bracket_group: bracket
 bracket_group_members: []

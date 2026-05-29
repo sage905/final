@@ -1,9 +1,5 @@
 ---
-- name: Bring up Pterodactyl as {{ pterodactyl_panel_user }}
-  become: true
-  become_user: "{{ pterodactyl_panel_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[pterodactyl_panel_user][1] }}"
+- name: Bring up Pterodactyl
   block:
     - name: Ensure the shared Podman network exists
       ansible.builtin.command:

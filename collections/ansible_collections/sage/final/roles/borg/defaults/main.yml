@@ -1,0 +1,75 @@
+---
+# --- Where Borgmatic keeps its config/keys on the host -----------------------
+# /etc/borgmatic is borgmatic's default config lookup path, so `borgmatic`
+# with no args picks up our config for ad-hoc ops.
+borg_data_dir: /etc/borgmatic
+borg_user: root
+borg_group: root
+
+# --- Hetzner Storage Box subaccount (REQUIRED) -------------------------------
+# Create the subaccount in the Hetzner Robot UI first. Enable SSH support on
+# it. Format below assumes the canonical "u123456" / "u123456-sub1" pattern.
+borg_ssh_host: ""                       # e.g. u123456.your-storagebox.de
+borg_ssh_user: ""                       # e.g. u123456-sub1
+borg_ssh_port: 23                       # Hetzner Storage Box uses 23, not 22
+
+# --- SSH key ------------------------------------------------------------------
+# When `borg_ssh_private_key` is empty (default), the role generates an
+# ed25519 keypair on the host and prints the public key — paste it into the
+# Hetzner subaccount's "SSH Keys" config and re-run to finish bootstrap.
+# To skip generation, provide a vaulted private key here; the role will
+# write it verbatim (and you must place the matching pubkey on Hetzner).
+borg_ssh_private_key: ""
+borg_ssh_key_path: "{{ borg_data_dir }}/id_ed25519"
+borg_known_hosts_path: "{{ borg_data_dir }}/known_hosts"
+
+# --- Repo --------------------------------------------------------------------
+# Repo lives at the subaccount's home dir on Hetzner, named by host so a
+# single subaccount can hold backups from multiple machines.
+borg_repo_name: "borg-{{ inventory_hostname }}"
+borg_repo: >-
+  ssh://{{ borg_ssh_user }}@{{ borg_ssh_host }}:{{ borg_ssh_port }}/./{{ borg_repo_name }}
+
+# Passphrase for repokey-encrypted repos. REQUIRED. Vault it in inventory.
+# Without it you cannot read OR write the repo — there is no recovery.
+borg_passphrase: ""
+
+# Encryption mode passed to `borgmatic init`. `repokey` keeps the keyfile
+# inside the repo itself (so it travels with the backup); `keyfile` would
+# store it locally and must be backed up separately.
+borg_encryption: repokey
+
+# --- Sources & excludes -------------------------------------------------------
+borg_source_paths:
+  - /srv
+
+borg_exclude_patterns:
+  - /srv/bulk
+
+# --- Backup tuning -----------------------------------------------------------
+borg_compression: "zstd,3"
+
+# Cap upload bandwidth (KiB/s). 0 = unlimited. Useful on shared links.
+borg_upload_ratelimit: 0
+
+# --- Retention ---------------------------------------------------------------
+borg_keep_daily: 30
+borg_keep_monthly: 12
+borg_keep_yearly: 10
+
+# --- Schedule ----------------------------------------------------------------
+# systemd OnCalendar expression. Applied as a drop-in over the upstream
+# borgmatic.timer (which defaults to "daily" with a 3-hour randomized
+# delay). Persistent=true on the upstream timer means a missed run fires
+# on next boot — we keep that behavior.
+borg_schedule: "*-*-* 03:00:00"
+borg_schedule_randomized_delay: "30min"
+
+# --- Healthchecks integration (optional) -------------------------------------
+# Borgmatic's healthchecks hook pings this URL on start, finish, and fail.
+# Get the URL from your Healthchecks instance: New Check → copy the
+# "Ping URL". Leave empty to disable.
+borg_healthchecks_url: ""
+
+# --- Package install ---------------------------------------------------------
+borg_install_package: true

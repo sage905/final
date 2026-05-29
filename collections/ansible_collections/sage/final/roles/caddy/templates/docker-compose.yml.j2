@@ -13,8 +13,8 @@ services:
     volumes:
       - "{{ caddy_data_dir }}/Caddyfile:/etc/caddy/Caddyfile:ro"
       - "{{ caddy_data_dir }}/conf.d:/etc/caddy/conf.d:ro"
-      - "{{ caddy_data_dir }}/data:/data:U"
-      - "{{ caddy_data_dir }}/config:/config:U"
+      - "{{ caddy_data_dir }}/data:/data"
+      - "{{ caddy_data_dir }}/config:/config"
     extra_hosts:
       - "host.containers.internal:host-gateway"
       - "host.docker.internal:host-gateway"

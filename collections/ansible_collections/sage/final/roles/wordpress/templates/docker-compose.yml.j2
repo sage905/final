@@ -9,7 +9,7 @@ services:
     restart: always
     command: --default-authentication-plugin=mysql_native_password
     volumes:
-      - "{{ wordpress_data_dir }}/wordpress-db:/var/lib/mysql:U"
+      - "{{ wordpress_data_dir }}/wordpress-db:/var/lib/mysql"
     environment:
       MYSQL_DATABASE: "{{ wordpress_db_name }}"
       MYSQL_USER: "{{ wordpress_db_user }}"
@@ -30,13 +30,13 @@ services:
       WORDPRESS_DB_USER: "{{ wordpress_db_user }}"
       WORDPRESS_DB_PASSWORD: "{{ wordpress_effective_db_password }}"
       # Forces WP_Filesystem to write plugin/theme/core updates directly
-      # to disk instead of prompting for FTP credentials. The `:U` mount
-      # flag below already gives www-data ownership of /var/www/html,
-      # so direct writes succeed.
+      # to disk instead of prompting for FTP credentials. The wordpress
+      # image's entrypoint chowns /var/www/html to www-data on first
+      # start, so direct writes succeed.
       WORDPRESS_CONFIG_EXTRA: |
         define('FS_METHOD', 'direct');
     volumes:
-      - "{{ wordpress_data_dir }}/wordpress:/var/www/html:U"
+      - "{{ wordpress_data_dir }}/wordpress:/var/www/html"
     networks:
       - shared
 

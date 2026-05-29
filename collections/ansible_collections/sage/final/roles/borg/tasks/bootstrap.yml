@@ -1,0 +1,43 @@
+---
+# Idempotent repo init. `borgmatic info` succeeds when the repo exists
+# and the passphrase is correct; we use that as the "is this initialized"
+# probe. `--config` points at the file we just wrote so this also works
+# before borgmatic's default lookup path is populated.
+- name: Probe whether the Borg repo is already initialized
+  ansible.builtin.command:
+    cmd: "borgmatic --config {{ borg_data_dir }}/config.yaml info"
+  register: borg_info_probe
+  changed_when: false
+  failed_when: false
+
+- name: Fail with actionable guidance when SSH can't reach Hetzner
+  ansible.builtin.fail:
+    msg: |
+      Borgmatic cannot reach the Hetzner Storage Box over SSH.
+
+        repo:  {{ borg_repo }}
+        error: {{ borg_info_probe.stderr | trim }}
+
+      Most likely causes:
+        - The SSH public key printed above has not been pasted into the
+          subaccount's "SSH Keys" panel in the Hetzner Robot UI yet.
+        - SSH support is not enabled on the subaccount.
+        - The subaccount username / hostname / port is wrong.
+
+      Fix the underlying problem and re-run with `--tags borg`.
+  when:
+    - borg_info_probe.rc != 0
+    - "'Connection' in borg_info_probe.stderr or
+       'Permission denied' in borg_info_probe.stderr or
+       'authentication' in borg_info_probe.stderr"
+
+- name: Initialize the Borg repo (first run only)
+  ansible.builtin.command:
+    cmd: "borgmatic --config {{ borg_data_dir }}/config.yaml init --encryption {{ borg_encryption }}"
+  when:
+    - borg_info_probe.rc != 0
+    - "'does not exist' in borg_info_probe.stderr or
+       'no such repository' in borg_info_probe.stderr.lower() or
+       'repository does not exist' in borg_info_probe.stderr"
+  register: borg_init_result
+  changed_when: borg_init_result.rc == 0

@@ -11,16 +11,14 @@ portainer_shared_network: web
 
 portainer_install_podman: true
 
-# Rootless: user that owns this role's data dir and runs podman-compose.
-# Portainer needs read+write access to this user's rootless podman socket
-# at /run/user/<uid>/podman/podman.sock — hardening's containers_user
-# task enables that socket as part of the standard setup.
-portainer_user: containers
+# Rootful: stack runs via system podman. Portainer mounts the system
+# podman socket (/run/podman/podman.sock) and sees every container the
+# other roles deployed.
+portainer_user: root
 
-# Group that owns Portainer's files. portainer_user is always a member;
-# extra names in portainer_group_members are also added (must already
-# exist as system users). Members can read Portainer's data dir but
-# the meaningful admin grant happens *inside* Portainer (its own RBAC,
-# teams, and per-stack access — set up after first login).
+# Group that owns Portainer's files. The meaningful admin grant happens
+# *inside* Portainer (its own RBAC, teams, and per-stack access — set up
+# after first login). The host group only governs SFTP access to
+# /srv/portainer, which is rarely useful.
 portainer_group: portainer
 portainer_group_members: []

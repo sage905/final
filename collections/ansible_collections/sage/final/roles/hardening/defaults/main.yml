@@ -6,9 +6,12 @@ hardening_firewall_enabled: false
 hardening_fail2ban_enabled: true
 hardening_unattended_upgrades_enabled: false
 hardening_sysctl_enabled: true
-hardening_containers_user_enabled: true
+# Off by default: the app roles in this collection now run containers via
+# rootful (system) podman. Flip to true if you want the legacy rootless
+# setup — creates a single non-root user that owns every stack.
+hardening_containers_user_enabled: false
 
-# --- Rootless containers user -------------------------------------------------
+# --- Rootless containers user (legacy; off by default) -----------------------
 # Creates a single non-root user that owns every podman-compose stack
 # deployed by the sage.final.* application roles. Enables systemd linger so
 # the user's containers survive reboots without an active login session.

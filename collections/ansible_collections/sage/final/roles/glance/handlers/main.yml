@@ -4,7 +4,3 @@
     cmd: podman-compose up -d --force-recreate
     chdir: "{{ glance_data_dir }}"
   changed_when: true
-  become: true
-  become_user: "{{ glance_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[glance_user][1] }}"

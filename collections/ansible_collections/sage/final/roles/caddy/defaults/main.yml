@@ -12,12 +12,14 @@ caddy_shared_network: web
 
 caddy_install_podman: true
 
-# Rootless: user that owns this role's data dir and runs podman-compose.
-caddy_user: containers
+# Rootful: stacks run via system podman. caddy_user owns the files on
+# disk. The official caddy:2-alpine image runs as root inside the
+# container, so root ownership on the host matches what the container
+# writes (no UID translation, no `:U` mount flag).
+caddy_user: root
 
-# Group that owns Caddy's files. caddy_user is always a member; extra
-# names in caddy_group_members are also added (must already exist as
-# system users).
+# Group that owns Caddy's files. Set group-writable + setgid on data
+# dirs so admins listed in caddy_group_members can read/write via SFTP.
 caddy_group: caddy
 caddy_group_members: []
 

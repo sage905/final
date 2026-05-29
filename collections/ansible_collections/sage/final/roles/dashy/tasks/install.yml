@@ -4,12 +4,13 @@
     name: "{{ dashy_group }}"
     state: present
 
-- name: Add users to the Dashy group
+- name: Add admin users to the Dashy group
   ansible.builtin.user:
     name: "{{ item }}"
     groups: "{{ dashy_group }}"
     append: true
-  loop: "{{ ([dashy_user] + dashy_group_members) | unique }}"
+  loop: "{{ dashy_group_members }}"
+  when: dashy_group_members | length > 0
 
 - name: Create Dashy directories
   ansible.builtin.file:
@@ -22,10 +23,8 @@
     - "{{ dashy_data_dir }}"
     - "{{ dashy_data_dir }}/user-data"
 
-# `:U` on the compose mounts only chowns files within podman's subuid range.
-# Files left behind by a prior root or rootful run can be outside that range
-# and trigger "lchown: operation not permitted" on container start. Run a
-# pre-emptive recursive chown as root to normalize ownership.
+# Heal ownership left over from prior rootless runs (subuid-mapped UIDs)
+# back to the rootful owner+group with setgid + group-write.
 - name: Normalize ownership of runtime dirs (heals prior-run leftovers)
   ansible.builtin.file:
     path: "{{ dashy_data_dir }}/{{ item }}"

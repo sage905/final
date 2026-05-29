@@ -4,12 +4,13 @@
     name: "{{ glance_group }}"
     state: present
 
-- name: Add users to the Glance group
+- name: Add admin users to the Glance group
   ansible.builtin.user:
     name: "{{ item }}"
     groups: "{{ glance_group }}"
     append: true
-  loop: "{{ ([glance_user] + glance_group_members) | unique }}"
+  loop: "{{ glance_group_members }}"
+  when: glance_group_members | length > 0
 
 - name: Create Glance directories
   ansible.builtin.file:
@@ -22,10 +23,8 @@
     - "{{ glance_data_dir }}"
     - "{{ glance_data_dir }}/config"
 
-# `:U` on the compose mounts only chowns files within podman's subuid range.
-# Files left behind by a prior root or rootful run can be outside that range
-# and trigger "lchown: operation not permitted" on container start. Run a
-# pre-emptive recursive chown as root to normalize ownership.
+# Heal ownership left over from prior rootless runs (subuid-mapped UIDs)
+# back to the rootful owner+group with setgid + group-write.
 - name: Normalize ownership of runtime dirs (heals prior-run leftovers)
   ansible.builtin.file:
     path: "{{ glance_data_dir }}/{{ item }}"

@@ -4,7 +4,3 @@
     cmd: podman-compose up -d --force-recreate
     chdir: "{{ bracket_data_dir }}"
   changed_when: true
-  become: true
-  become_user: "{{ bracket_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[bracket_user][1] }}"

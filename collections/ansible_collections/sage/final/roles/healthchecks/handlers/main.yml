@@ -1,0 +1,6 @@
+---
+- name: Recreate healthchecks stack
+  ansible.builtin.command:
+    cmd: podman-compose up -d --force-recreate
+    chdir: "{{ healthchecks_data_dir }}"
+  changed_when: true

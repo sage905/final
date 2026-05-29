@@ -1,0 +1,59 @@
+# {{ ansible_managed }}
+# Borgmatic 1.x config schema (Ubuntu noble ships 1.8.x).
+# Schema reference: https://torsion.org/borgmatic/docs/reference/configuration/
+
+location:
+    source_directories:
+{% for path in borg_source_paths %}
+        - {{ path }}
+{% endfor %}
+
+    repositories:
+        - path: {{ borg_repo | trim }}
+          label: hetzner
+
+    exclude_patterns:
+{% for pattern in borg_exclude_patterns %}
+        - {{ pattern }}
+{% endfor %}
+
+storage:
+    encryption_passcommand: "cat {{ borg_data_dir }}/passphrase"
+    ssh_command: "ssh -i {{ borg_ssh_key_path }} -o UserKnownHostsFile={{ borg_known_hosts_path }} -o StrictHostKeyChecking=yes"
+    compression: {{ borg_compression }}
+{% if borg_upload_ratelimit | int > 0 %}
+    upload_rate_limit: {{ borg_upload_ratelimit }}
+{% endif %}
+    # Archive name pattern. {hostname}-{now} is borgmatic's default but we
+    # spell it out so the prune --glob below stays in sync with it.
+    archive_name_format: "{{ '{hostname}-{now:%Y-%m-%dT%H:%M:%S}' }}"
+
+retention:
+    keep_daily: {{ borg_keep_daily }}
+    keep_monthly: {{ borg_keep_monthly }}
+    keep_yearly: {{ borg_keep_yearly }}
+    # Scope prune to this host's archives only — so a shared subaccount
+    # holding backups from multiple hosts under the same repo (rare, but
+    # possible) doesn't see them touched.
+    prefix: "{{ '{hostname}-' }}"
+
+consistency:
+    # Verify a sample of archives every two weeks. Cheap insurance.
+    checks:
+        - name: archives
+          frequency: 2 weeks
+    prefix: "{{ '{hostname}-' }}"
+
+hooks:
+{% if borg_healthchecks_url | length > 0 %}
+    healthchecks:
+        ping_url: {{ borg_healthchecks_url }}
+        # Ping the /start endpoint when borgmatic begins, /finish on
+        # success, /fail on error. send_logs uploads the run's log as the
+        # ping body so you can see what happened from the Healthchecks UI.
+        send_logs: true
+        states:
+            - start
+            - finish
+            - fail
+{% endif %}

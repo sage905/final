@@ -4,7 +4,3 @@
     cmd: podman-compose up -d --force-recreate
     chdir: "{{ pterodactyl_panel_data_dir }}"
   changed_when: true
-  become: true
-  become_user: "{{ pterodactyl_panel_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[pterodactyl_panel_user][1] }}"

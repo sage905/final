@@ -1,0 +1,42 @@
+---
+# {{ ansible_managed }}
+name: healthchecks
+
+services:
+  healthchecks:
+    image: {{ healthchecks_image }}
+    container_name: healthchecks
+    restart: always
+    environment:
+      SITE_ROOT: "{{ healthchecks_site_root }}"
+      SITE_NAME: "Healthchecks"
+      ALLOWED_HOSTS: "{{ healthchecks_site_root | urlsplit('hostname') }}"
+      SECRET_KEY: "{{ healthchecks_secret_key }}"
+      DEBUG: "False"
+      REGISTRATION_OPEN: "{{ 'True' if healthchecks_registration_open else 'False' }}"
+{% if healthchecks_superuser_email | length > 0 and healthchecks_superuser_password | length > 0 %}
+      SUPERUSER_EMAIL: "{{ healthchecks_superuser_email }}"
+      SUPERUSER_PASSWORD: "{{ healthchecks_superuser_password }}"
+{% endif %}
+      DEFAULT_FROM_EMAIL: "{{ healthchecks_default_from_email }}"
+{% if healthchecks_email_host | length > 0 %}
+      EMAIL_HOST: "{{ healthchecks_email_host }}"
+      EMAIL_PORT: "{{ healthchecks_email_port }}"
+      EMAIL_HOST_USER: "{{ healthchecks_email_user }}"
+      EMAIL_HOST_PASSWORD: "{{ healthchecks_email_password }}"
+      EMAIL_USE_TLS: "{{ 'True' if healthchecks_email_use_tls else 'False' }}"
+{% endif %}
+    # `:U` is an exception within this rootful collection: the
+    # healthchecks image sets USER=app (UID 1000) and doesn't chown
+    # /data on entrypoint, so the host dir has to be pre-owned by 1000
+    # for sqlite to write. After first start the host-side owner
+    # becomes 1000:1000 — admins manage Healthchecks via the web UI.
+    volumes:
+      - "{{ healthchecks_data_dir }}/data:/data:U"
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ healthchecks_shared_network }}
+    external: true

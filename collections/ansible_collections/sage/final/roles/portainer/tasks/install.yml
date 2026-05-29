@@ -4,12 +4,13 @@
     name: "{{ portainer_group }}"
     state: present
 
-- name: Add users to the Portainer group
+- name: Add admin users to the Portainer group
   ansible.builtin.user:
     name: "{{ item }}"
     groups: "{{ portainer_group }}"
     append: true
-  loop: "{{ ([portainer_user] + portainer_group_members) | unique }}"
+  loop: "{{ portainer_group_members }}"
+  when: portainer_group_members | length > 0
 
 - name: Create Portainer directories
   ansible.builtin.file:
@@ -22,9 +23,8 @@
     - "{{ portainer_data_dir }}"
     - "{{ portainer_data_dir }}/data"
 
-# `:U` on the compose mount only chowns files within podman's subuid range.
-# Files left behind by a prior root or rootful run can be outside that range
-# and trigger "lchown: operation not permitted" on container start.
+# Heal ownership left over from prior rootless runs (subuid-mapped UIDs)
+# back to the rootful owner+group with setgid + group-write.
 - name: Normalize ownership of runtime dirs (heals prior-run leftovers)
   ansible.builtin.file:
     path: "{{ portainer_data_dir }}/data"

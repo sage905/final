@@ -4,7 +4,3 @@
     cmd: podman-compose up -d --force-recreate
     chdir: "{{ wordpress_data_dir }}"
   changed_when: true
-  become: true
-  become_user: "{{ wordpress_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[wordpress_user][1] }}"

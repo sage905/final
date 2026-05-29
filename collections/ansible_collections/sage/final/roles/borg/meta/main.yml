@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: borg
+  namespace: sage
+  author: Sage
+  description: Nightly Borg backups of /srv to a Hetzner Storage Box subaccount.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - borg
+    - backup
+    - hetzner
+dependencies: []

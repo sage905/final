@@ -1,0 +1,69 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy Healthchecks behind the shared Caddy.
+    options:
+      healthchecks_data_dir:
+        type: path
+        default: /srv/healthchecks
+      healthchecks_image:
+        type: str
+        default: docker.io/healthchecks/healthchecks:latest
+      healthchecks_container_port:
+        type: int
+        default: 8000
+      healthchecks_site_root:
+        type: str
+        required: true
+        description: Public URL of the instance (includes scheme, no trailing slash).
+      healthchecks_secret_key:
+        type: str
+        required: true
+        no_log: true
+        description: Django SECRET_KEY. Vault it.
+      healthchecks_superuser_email:
+        type: str
+        default: ""
+      healthchecks_superuser_password:
+        type: str
+        default: ""
+        no_log: true
+      healthchecks_registration_open:
+        type: bool
+        default: false
+      healthchecks_email_host:
+        type: str
+        default: ""
+      healthchecks_email_port:
+        type: int
+        default: 587
+      healthchecks_email_user:
+        type: str
+        default: ""
+      healthchecks_email_password:
+        type: str
+        default: ""
+        no_log: true
+      healthchecks_email_use_tls:
+        type: bool
+        default: true
+      healthchecks_default_from_email:
+        type: str
+        default: ""
+      healthchecks_shared_network:
+        type: str
+        default: web
+      healthchecks_install_podman:
+        type: bool
+        default: true
+      healthchecks_user:
+        type: str
+        default: root
+      healthchecks_group:
+        type: str
+        default: healthchecks
+      healthchecks_group_members:
+        type: list
+        elements: str
+        default: []
+        description: Listed system users get group-read access to /srv/healthchecks.

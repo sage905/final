@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: healthchecks
+  namespace: sage
+  author: Sage
+  description: Self-hosted Healthchecks (cron-job monitoring) behind the shared Caddy.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - healthchecks
+    - monitoring
+    - cron
+    - backups
+dependencies: []

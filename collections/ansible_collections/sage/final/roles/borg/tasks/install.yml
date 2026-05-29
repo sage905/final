@@ -1,0 +1,118 @@
+---
+- name: Create Borgmatic data directory
+  ansible.builtin.file:
+    path: "{{ borg_data_dir }}"
+    state: directory
+    owner: "{{ borg_user }}"
+    group: "{{ borg_group }}"
+    mode: "0700"
+
+# --- SSH key -----------------------------------------------------------------
+- name: Write provided SSH private key (when borg_ssh_private_key is set)
+  ansible.builtin.copy:
+    content: "{{ borg_ssh_private_key }}"
+    dest: "{{ borg_ssh_key_path }}"
+    owner: "{{ borg_user }}"
+    group: "{{ borg_group }}"
+    mode: "0600"
+  when: borg_ssh_private_key | length > 0
+  no_log: true
+
+- name: Generate SSH keypair (when no key was provided)
+  community.crypto.openssh_keypair:
+    path: "{{ borg_ssh_key_path }}"
+    type: ed25519
+    owner: "{{ borg_user }}"
+    group: "{{ borg_group }}"
+    mode: "0600"
+    comment: "borg@{{ inventory_hostname }}"
+  when: borg_ssh_private_key | length == 0
+
+- name: Read the generated public key
+  ansible.builtin.slurp:
+    src: "{{ borg_ssh_key_path }}.pub"
+  register: borg_pubkey_slurp
+  when: borg_ssh_private_key | length == 0
+
+- name: Show the public key so it can be registered with Hetzner
+  ansible.builtin.debug:
+    msg: |
+      Borg SSH public key (paste into the Hetzner Storage Box subaccount
+      under "SSH Keys" before the first backup can run):
+
+      {{ borg_pubkey_slurp.content | b64decode | trim }}
+  when:
+    - borg_ssh_private_key | length == 0
+    - borg_pubkey_slurp is defined
+
+# --- known_hosts (pre-seed Hetzner's host keys) ------------------------------
+- name: Learn the Hetzner Storage Box SSH host keys
+  ansible.builtin.command:
+    cmd: "ssh-keyscan -p {{ borg_ssh_port }} -t rsa,ecdsa,ed25519 {{ borg_ssh_host }}"
+  register: borg_hostkeys
+  changed_when: false
+  retries: 3
+  delay: 2
+  until: borg_hostkeys.rc == 0 and borg_hostkeys.stdout | length > 0
+  failed_when: false
+
+- name: Write Borg known_hosts
+  ansible.builtin.copy:
+    content: "{{ borg_hostkeys.stdout }}\n"
+    dest: "{{ borg_known_hosts_path }}"
+    owner: "{{ borg_user }}"
+    group: "{{ borg_group }}"
+    mode: "0644"
+  when: borg_hostkeys.stdout | default('') | length > 0
+
+# --- Passphrase --------------------------------------------------------------
+- name: Write Borg passphrase file
+  ansible.builtin.copy:
+    content: "{{ borg_passphrase }}\n"
+    dest: "{{ borg_data_dir }}/passphrase"
+    owner: "{{ borg_user }}"
+    group: "{{ borg_group }}"
+    mode: "0600"
+  no_log: true
+
+# --- Borgmatic config --------------------------------------------------------
+- name: Render borgmatic config
+  ansible.builtin.template:
+    src: borgmatic-config.yaml.j2
+    dest: "{{ borg_data_dir }}/config.yaml"
+    owner: "{{ borg_user }}"
+    group: "{{ borg_group }}"
+    mode: "0640"
+
+# --- systemd timer drop-in (override the upstream schedule) ------------------
+- name: Create systemd timer drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/borgmatic.timer.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Override borgmatic.timer schedule
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/borgmatic.timer.d/sage-final.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      [Timer]
+      OnCalendar=
+      OnCalendar={{ borg_schedule }}
+      RandomizedDelaySec=
+      RandomizedDelaySec={{ borg_schedule_randomized_delay }}
+  notify: Reload systemd
+
+- name: Flush handlers (reload systemd before enabling timer)
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start the borgmatic timer
+  ansible.builtin.systemd:
+    name: borgmatic.timer
+    enabled: true
+    state: started

@@ -1,0 +1,94 @@
+---
+argument_specs:
+  main:
+    short_description: Install and schedule Borg backups of /srv to Hetzner.
+    options:
+      borg_data_dir:
+        type: path
+        default: /etc/borgmatic
+      borg_user:
+        type: str
+        default: root
+      borg_group:
+        type: str
+        default: root
+      borg_ssh_host:
+        type: str
+        required: true
+        description: Hetzner Storage Box hostname (e.g. u123456.your-storagebox.de).
+      borg_ssh_user:
+        type: str
+        required: true
+        description: Subaccount username (e.g. u123456-sub1).
+      borg_ssh_port:
+        type: int
+        default: 23
+      borg_ssh_private_key:
+        type: str
+        default: ""
+        no_log: true
+        description: >-
+          Optional vaulted private key contents. If empty, the role
+          generates an ed25519 keypair on the host.
+      borg_ssh_key_path:
+        type: path
+        default: /etc/borgmatic/id_ed25519
+      borg_known_hosts_path:
+        type: path
+        default: /etc/borgmatic/known_hosts
+      borg_repo_name:
+        type: str
+        default: "borg-{{ inventory_hostname }}"
+      borg_repo:
+        type: str
+        description: Full borg repo URL. Defaults to a templated value built from ssh_host/user/port/repo_name.
+      borg_passphrase:
+        type: str
+        required: true
+        no_log: true
+        description: Repokey passphrase. Required for create AND restore — no recovery if lost.
+      borg_encryption:
+        type: str
+        default: repokey
+        choices: [repokey, keyfile, none]
+      borg_source_paths:
+        type: list
+        elements: path
+        default: [/srv]
+      borg_exclude_patterns:
+        type: list
+        elements: str
+        default: [/srv/bulk]
+      borg_compression:
+        type: str
+        default: "zstd,3"
+      borg_upload_ratelimit:
+        type: int
+        default: 0
+        description: Upload cap in KiB/s. 0 = unlimited.
+      borg_keep_daily:
+        type: int
+        default: 30
+      borg_keep_monthly:
+        type: int
+        default: 12
+      borg_keep_yearly:
+        type: int
+        default: 10
+      borg_schedule:
+        type: str
+        default: "*-*-* 03:00:00"
+        description: systemd OnCalendar expression.
+      borg_schedule_randomized_delay:
+        type: str
+        default: "30min"
+        description: systemd RandomizedDelaySec value.
+      borg_healthchecks_url:
+        type: str
+        default: ""
+        description: >-
+          Optional Healthchecks ping URL. When set, borgmatic pings it on
+          start/finish/fail. Get the URL from your Healthchecks check.
+      borg_install_package:
+        type: bool
+        default: true

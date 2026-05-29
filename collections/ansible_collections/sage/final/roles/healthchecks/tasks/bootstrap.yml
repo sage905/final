@@ -1,0 +1,18 @@
+---
+- name: Ensure the shared Podman network exists
+  ansible.builtin.command:
+    cmd: "podman network create {{ healthchecks_shared_network }}"
+  register: healthchecks_network_result
+  changed_when: healthchecks_network_result.rc == 0
+  failed_when:
+    - healthchecks_network_result.rc != 0
+    - "'already exists' not in healthchecks_network_result.stderr"
+
+- name: Bring up the Healthchecks stack
+  ansible.builtin.command:
+    cmd: podman-compose up -d --remove-orphans
+    chdir: "{{ healthchecks_data_dir }}"
+  register: healthchecks_compose_result
+  changed_when: "'Creating' in healthchecks_compose_result.stdout
+                 or 'Recreating' in healthchecks_compose_result.stdout
+                 or 'Started' in healthchecks_compose_result.stderr"

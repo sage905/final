@@ -18,12 +18,17 @@ wordpress_shared_network: web
 # --- Container runtime install ------------------------------------------------
 wordpress_install_podman: true
 
-# Rootless: user that owns this role's data dir and runs podman-compose.
-wordpress_user: containers
+# Rootful: stack runs via system podman. wordpress_user owns the files
+# on disk. Apache inside the wordpress image drops to www-data (UID 33)
+# and will chown /var/www/html accordingly on first start, so after that
+# /srv/wordpress/wordpress is owned by host UID 33 (www-data on Ubuntu).
+# For top-level config (compose, env) the wordpress group grants admin
+# access; for runtime files (wp-content), use Portainer's exec terminal
+# or `sudo` since they end up owned by www-data:www-data.
+wordpress_user: root
 
-# Group that owns WordPress's files. wordpress_user is always a member;
-# extra names in wordpress_group_members are also added (must already
-# exist as system users). The secrets dir stays group-readable but not
-# group-writable.
+# Group that owns WordPress's files. Admins in wordpress_group_members
+# can read/write /srv/wordpress top-level files via SFTP. Secrets dir
+# stays group-readable but not group-writable.
 wordpress_group: wordpress
 wordpress_group_members: []
