@@ -21,12 +21,12 @@
     group: "{{ healthchecks_group }}"
     mode: "2775"
 
-# Container-managed runtime subtree. UID 1000 matches the `app` user
-# inside the healthchecks image; pre-chowning here means the container
-# (and its sqlite writes) just work without depending on podman's `:U`
+# Container-managed runtime subtree. UID 999 matches the `hc` user inside
+# the healthchecks image (the image used to call it `app` at UID 1000 in
+# older tags; current ones use `hc`/999). Pre-chowning here means the
+# container's sqlite writes just work without depending on podman's `:U`
 # mount flag (which is inconsistent across Ubuntu's podman package
-# versions). Stat-gated so we only set initial perms on first install —
-# the container chowns files inside as it likes after that.
+# versions). Stat-gated so we only set initial perms on first install.
 - name: Stat Healthchecks data dir
   ansible.builtin.stat:
     path: "{{ healthchecks_data_dir }}/data"
@@ -36,7 +36,7 @@
   ansible.builtin.file:
     path: "{{ healthchecks_data_dir }}/data"
     state: directory
-    owner: "1000"
+    owner: "999"
     group: "{{ healthchecks_group }}"
     mode: "2775"
   when: not healthchecks_data_stat.stat.exists
