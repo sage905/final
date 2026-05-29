@@ -24,3 +24,13 @@ argument_specs:
       dashy_user:
         type: str
         default: containers
+      dashy_group:
+        type: str
+        default: dashy
+      dashy_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to dashy_group. dashy_user is
+          always a member. Listed users must already exist on the host.

@@ -14,3 +14,9 @@ dashy_install_podman: true
 
 # Rootless: user that owns this role's data dir and runs podman-compose.
 dashy_user: containers
+
+# Group that owns Dashy's files. dashy_user is always a member; extra
+# names in dashy_group_members are also added (must already exist as
+# system users — listed accounts are added to the group, not created).
+dashy_group: dashy
+dashy_group_members: []

@@ -15,6 +15,12 @@ caddy_install_podman: true
 # Rootless: user that owns this role's data dir and runs podman-compose.
 caddy_user: containers
 
+# Group that owns Caddy's files. caddy_user is always a member; extra
+# names in caddy_group_members are also added (must already exist as
+# system users).
+caddy_group: caddy
+caddy_group_members: []
+
 # All reverse-proxy site blocks Caddy serves. App roles (pterodactyl_panel,
 # wordpress, dashy, glance, bracket, jellyfin) only deploy their containers
 # onto the shared `web` network — every public site is declared here.

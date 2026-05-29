@@ -4,8 +4,8 @@
     content: "{{ pterodactyl_wings_config_yaml }}"
     dest: "{{ pterodactyl_wings_config_dir }}/config.yml"
     owner: root
-    group: root
-    mode: "0600"
+    group: "{{ pterodactyl_wings_group }}"
+    mode: "0640"
   when: pterodactyl_wings_config_yaml | length > 0
   notify: Restart wings
 

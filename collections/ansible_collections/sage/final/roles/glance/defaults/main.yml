@@ -14,3 +14,9 @@ glance_install_podman: true
 
 # Rootless: user that owns this role's data dir and runs podman-compose.
 glance_user: containers
+
+# Group that owns Glance's files. glance_user is always a member; extra
+# names in glance_group_members are also added (must already exist as
+# system users).
+glance_group: glance
+glance_group_members: []

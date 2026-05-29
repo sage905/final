@@ -90,3 +90,14 @@ argument_specs:
       pterodactyl_panel_user:
         type: str
         default: containers
+      pterodactyl_panel_group:
+        type: str
+        default: pterodactyl
+      pterodactyl_panel_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to pterodactyl_panel_group.
+          pterodactyl_panel_user is always a member. Listed users must
+          already exist on the host.

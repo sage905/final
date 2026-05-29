@@ -19,3 +19,9 @@ jellyfin_install_podman: true
 
 # Rootless: user that owns this role's data dir and runs podman-compose.
 jellyfin_user: containers
+
+# Group that owns Jellyfin's files. jellyfin_user is always a member;
+# extra names in jellyfin_group_members are also added (must already
+# exist as system users).
+jellyfin_group: jellyfin
+jellyfin_group_members: []

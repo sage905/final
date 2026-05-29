@@ -1,11 +1,23 @@
 ---
+- name: Ensure Dashy group exists
+  ansible.builtin.group:
+    name: "{{ dashy_group }}"
+    state: present
+
+- name: Add users to the Dashy group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ dashy_group }}"
+    append: true
+  loop: "{{ ([dashy_user] + dashy_group_members) | unique }}"
+
 - name: Create Dashy directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: "{{ dashy_user }}"
-    group: "{{ dashy_user }}"
-    mode: "0755"
+    group: "{{ dashy_group }}"
+    mode: "2775"
   loop:
     - "{{ dashy_data_dir }}"
     - "{{ dashy_data_dir }}/user-data"
@@ -19,7 +31,8 @@
     path: "{{ dashy_data_dir }}/{{ item }}"
     state: directory
     owner: "{{ dashy_user }}"
-    group: "{{ dashy_user }}"
+    group: "{{ dashy_group }}"
+    mode: "u=rwX,g=rwX,o="
     recurse: true
   loop:
     - user-data
@@ -35,8 +48,8 @@
       sections: []
     force: false
     owner: "{{ dashy_user }}"
-    group: "{{ dashy_user }}"
-    mode: "0644"
+    group: "{{ dashy_group }}"
+    mode: "0660"
   when: dashy_seed_config
   notify: Recreate dashy stack
 
@@ -45,6 +58,6 @@
     src: docker-compose.yml.j2
     dest: "{{ dashy_data_dir }}/docker-compose.yml"
     owner: "{{ dashy_user }}"
-    group: "{{ dashy_user }}"
-    mode: "0640"
+    group: "{{ dashy_group }}"
+    mode: "0660"
   notify: Recreate dashy stack

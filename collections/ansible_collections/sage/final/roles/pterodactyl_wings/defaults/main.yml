@@ -16,6 +16,13 @@ pterodactyl_wings_config_dir: /etc/pterodactyl
 pterodactyl_wings_data_dir: /var/lib/pterodactyl
 pterodactyl_wings_log_dir: /var/log/pterodactyl
 
+# Group that owns Wings's config and log files (the data dir stays
+# root-only — directly editing game-server state would corrupt running
+# servers). Members listed below can read config.yml and tail logs
+# without sudo. Users must already exist on the host.
+pterodactyl_wings_group: pterodactyl_wings
+pterodactyl_wings_group_members: []
+
 # Optional: drop a Wings config.yml fetched from the Panel onto the host.
 # Provide the file contents (typically read with `lookup('file', ...)`) — when
 # empty the role installs the binary and unit but leaves config.yml to the

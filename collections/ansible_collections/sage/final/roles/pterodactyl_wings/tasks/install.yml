@@ -1,15 +1,39 @@
 ---
-- name: Create Wings directories
+- name: Ensure pterodactyl_wings group exists
+  ansible.builtin.group:
+    name: "{{ pterodactyl_wings_group }}"
+    state: present
+
+- name: Add users to the pterodactyl_wings group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ pterodactyl_wings_group }}"
+    append: true
+  loop: "{{ pterodactyl_wings_group_members }}"
+  when: pterodactyl_wings_group_members | length > 0
+
+# Wings runs as a root system daemon. Group members can read config and
+# logs (inspect + tail) but the data dir stays root-only — directly
+# editing game-server state from outside Wings risks corrupting running
+# servers. Admins should manage servers via the Panel UI / Wings API.
+- name: Create Wings config and log directories (group readable)
   ansible.builtin.file:
-    path: "{{ item.path }}"
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: "{{ pterodactyl_wings_group }}"
+    mode: "0750"
+  loop:
+    - "{{ pterodactyl_wings_config_dir }}"
+    - "{{ pterodactyl_wings_log_dir }}"
+
+- name: Create Wings data directory (root-only)
+  ansible.builtin.file:
+    path: "{{ pterodactyl_wings_data_dir }}"
     state: directory
     owner: root
     group: root
-    mode: "{{ item.mode }}"
-  loop:
-    - {path: "{{ pterodactyl_wings_config_dir }}", mode: "0700"}
-    - {path: "{{ pterodactyl_wings_data_dir }}", mode: "0700"}
-    - {path: "{{ pterodactyl_wings_log_dir }}", mode: "0700"}
+    mode: "0700"
 
 - name: Resolve Wings download URL
   ansible.builtin.set_fact:
