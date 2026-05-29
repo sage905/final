@@ -1,0 +1,26 @@
+---
+portainer_data_dir: /srv/portainer
+# Portainer CE LTS. Override to portainer-ee:lts for the commercial edition
+# (requires a license key entered at first-run).
+portainer_image: docker.io/portainer/portainer-ce:lts
+# Portainer's HTTP listener inside the container. Caddy fronts it.
+portainer_container_port: 9000
+
+# Shared infra provided by sage.final.caddy.
+portainer_shared_network: web
+
+portainer_install_podman: true
+
+# Rootless: user that owns this role's data dir and runs podman-compose.
+# Portainer needs read+write access to this user's rootless podman socket
+# at /run/user/<uid>/podman/podman.sock — hardening's containers_user
+# task enables that socket as part of the standard setup.
+portainer_user: containers
+
+# Group that owns Portainer's files. portainer_user is always a member;
+# extra names in portainer_group_members are also added (must already
+# exist as system users). Members can read Portainer's data dir but
+# the meaningful admin grant happens *inside* Portainer (its own RBAC,
+# teams, and per-stack access — set up after first login).
+portainer_group: portainer
+portainer_group_members: []

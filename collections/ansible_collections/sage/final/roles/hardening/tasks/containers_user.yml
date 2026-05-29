@@ -34,6 +34,21 @@
     enabled: true
   when: getent_passwd[hardening_containers_user] is not none
 
+# Portainer (and any other container-management UI) needs the rootless
+# podman API socket. Enable the user-mode podman.socket so it's available
+# at /run/user/<uid>/podman/podman.sock for bind-mounting into containers.
+- name: Enable the user-mode podman.socket for {{ hardening_containers_user }}
+  ansible.builtin.systemd:
+    name: podman.socket
+    enabled: true
+    state: started
+    scope: user
+  become: true
+  become_user: "{{ hardening_containers_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[hardening_containers_user][1] }}"
+  when: getent_passwd[hardening_containers_user] is not none
+
 # Lets the user bind 80/443 (Caddy) without CAP_NET_BIND_SERVICE on podman.
 - name: Lower the unprivileged port-start threshold
   ansible.posix.sysctl:

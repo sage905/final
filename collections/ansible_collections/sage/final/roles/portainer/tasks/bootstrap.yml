@@ -1,0 +1,24 @@
+---
+- name: Bring up the Portainer stack as {{ portainer_user }}
+  become: true
+  become_user: "{{ portainer_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[portainer_user][1] }}"
+  block:
+    - name: Ensure the shared Podman network exists
+      ansible.builtin.command:
+        cmd: "podman network create {{ portainer_shared_network }}"
+      register: portainer_network_result
+      changed_when: portainer_network_result.rc == 0
+      failed_when:
+        - portainer_network_result.rc != 0
+        - "'already exists' not in portainer_network_result.stderr"
+
+    - name: Bring up the Portainer stack
+      ansible.builtin.command:
+        cmd: podman-compose up -d --remove-orphans
+        chdir: "{{ portainer_data_dir }}"
+      register: portainer_compose_result
+      changed_when: "'Creating' in portainer_compose_result.stdout
+                     or 'Recreating' in portainer_compose_result.stdout
+                     or 'Started' in portainer_compose_result.stderr"

@@ -1,0 +1,28 @@
+---
+# {{ ansible_managed }}
+name: portainer
+
+services:
+  portainer:
+    image: {{ portainer_image }}
+    container_name: portainer
+    restart: always
+    # Portainer talks to the rootless podman socket via its Docker-compat
+    # endpoint. Mounted into the container at the path Portainer expects
+    # for a Docker socket. The host path is the containers user's runtime
+    # socket — hardening's containers_user task enables podman.socket
+    # (user scope) so this file exists at boot.
+    volumes:
+      - "{{ portainer_data_dir }}/data:/data:U"
+      - "/run/user/{{ getent_passwd[portainer_user][1] }}/podman/podman.sock:/var/run/docker.sock"
+    # `--http-enabled` tells Portainer to expose its UI on HTTP (Caddy
+    # terminates TLS for us). Without it, Portainer would also try to
+    # listen on HTTPS:9443 with its own self-signed cert.
+    command: ["--http-enabled"]
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ portainer_shared_network }}
+    external: true

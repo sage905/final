@@ -11,6 +11,7 @@
 #   ansible-navigator run site.yml --tags glance
 #   ansible-navigator run site.yml --tags bracket
 #   ansible-navigator run site.yml --tags jellyfin
+#   ansible-navigator run site.yml --tags portainer
 #   ansible-navigator run site.yml --tags hardening
 # Skip the apt upgrade with --skip-tags update.
 - name: Bring all packages up to date
@@ -116,3 +117,12 @@
     - jellyfin
   roles:
     - role: sage.final.jellyfin
+
+- name: Deploy Portainer
+  hosts: portainer
+  become: true
+  gather_facts: true
+  tags:
+    - portainer
+  roles:
+    - role: sage.final.portainer

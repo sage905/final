@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: portainer
+  namespace: sage
+  author: Sage
+  description: Run Portainer CE behind the shared Caddy. Manages the rootless podman socket for container ops + per-stack RBAC.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - portainer
+    - containers
+    - podman
+    - admin
+dependencies: []

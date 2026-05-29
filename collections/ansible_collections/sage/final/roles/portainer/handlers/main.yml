@@ -1,0 +1,10 @@
+---
+- name: Recreate portainer stack
+  ansible.builtin.command:
+    cmd: podman-compose up -d --force-recreate
+    chdir: "{{ portainer_data_dir }}"
+  changed_when: true
+  become: true
+  become_user: "{{ portainer_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[portainer_user][1] }}"
