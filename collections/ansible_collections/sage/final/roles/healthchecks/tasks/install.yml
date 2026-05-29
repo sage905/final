@@ -21,12 +21,12 @@
     group: "{{ healthchecks_group }}"
     mode: "2775"
 
-# Container-managed runtime subtree. Created ONLY if missing — once it
-# exists, podman's :U flag on the data mount chowns it to the container's
-# `app` UID (1000) on every container start, and we never touch it from
-# Ansible again. Without the stat-gate, a recursive chown here would
-# fight the :U-set ownership on every role run and break the running
-# container's access to its sqlite database until the next Recreate.
+# Container-managed runtime subtree. UID 1000 matches the `app` user
+# inside the healthchecks image; pre-chowning here means the container
+# (and its sqlite writes) just work without depending on podman's `:U`
+# mount flag (which is inconsistent across Ubuntu's podman package
+# versions). Stat-gated so we only set initial perms on first install —
+# the container chowns files inside as it likes after that.
 - name: Stat Healthchecks data dir
   ansible.builtin.stat:
     path: "{{ healthchecks_data_dir }}/data"
@@ -36,7 +36,7 @@
   ansible.builtin.file:
     path: "{{ healthchecks_data_dir }}/data"
     state: directory
-    owner: "{{ healthchecks_user }}"
+    owner: "1000"
     group: "{{ healthchecks_group }}"
     mode: "2775"
   when: not healthchecks_data_stat.stat.exists
