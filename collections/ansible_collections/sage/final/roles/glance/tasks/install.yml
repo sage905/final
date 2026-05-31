@@ -42,7 +42,10 @@
     content: |
       pages:
         - name: Home
-          columns: []
+          columns:
+            - size: full
+              widgets:
+                - type: calendar
     force: false
     owner: "{{ glance_user }}"
     group: "{{ glance_group }}"

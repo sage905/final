@@ -27,6 +27,7 @@ services:
       SERVE_FRONTEND: "true"
       API_PREFIX: /api
       CORS_ORIGINS: "https://{{ bracket_fqdn }}"
+      JWT_SECRET: "{{ bracket_effective_jwt_secret }}"
       PG_DSN: "postgresql://{{ bracket_db_user }}:{{ bracket_effective_db_password }}@bracket-db:5432/{{ bracket_db_name }}"
     volumes:
       - "{{ bracket_data_dir }}/static:/app/static"
