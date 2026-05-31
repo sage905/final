@@ -1,0 +1,38 @@
+---
+# Interface name. wg0 is the convention; bump only if you already have a
+# wg0 on the host (running multiple WireGuard tunnels at once).
+wireguard_client_interface: wg0
+
+# --- This host's address inside the VPN (REQUIRED) ---------------------------
+# Must match what OPNsense's peer config has under "Tunnel Address" for
+# this client. Use CIDR notation so wg-quick knows the subnet mask.
+# Example: "10.8.0.5/24"
+wireguard_client_address: ""
+
+# Optional ListenPort. Default 0 = let the kernel pick an ephemeral port
+# (correct for clients — only set this if OPNsense is dialing back to
+# this host, which the split-tunnel pattern doesn't need).
+wireguard_client_listen_port: 0
+
+# --- Keys -------------------------------------------------------------------
+# Generated on the target host on first run. Public key is printed via
+# debug so you can paste it into the OPNsense peer config; the role
+# stays idempotent after that.
+wireguard_client_private_key_path: "/etc/wireguard/{{ wireguard_client_interface }}.key"
+wireguard_client_public_key_path: "/etc/wireguard/{{ wireguard_client_interface }}.pub"
+
+# --- OPNsense peer ----------------------------------------------------------
+# All four below come from the OPNsense WireGuard config:
+#   peer_public_key   = the SERVER instance's public key (Instances tab)
+#   peer_endpoint     = the public host:port the server listens on
+#   peer_allowed_ips  = subnets to route via the tunnel — for split-tunnel,
+#                       only the LAN(s) you want reachable. Do NOT put
+#                       0.0.0.0/0 unless you want full-tunnel.
+#   peer_preshared_key = optional; vault this if you use one
+wireguard_client_peer_public_key: ""
+wireguard_client_peer_endpoint: ""
+wireguard_client_peer_preshared_key: ""
+wireguard_client_peer_allowed_ips: []
+
+# 25s is the standard NAT-traversal keepalive. Set 0 to disable.
+wireguard_client_peer_persistent_keepalive: 25

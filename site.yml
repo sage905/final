@@ -15,6 +15,7 @@
 #   ansible-navigator run site.yml --tags healthchecks
 #   ansible-navigator run site.yml --tags borg
 #   ansible-navigator run site.yml --tags hardening
+#   ansible-navigator run site.yml --tags wireguard_client
 # Skip the apt upgrade with --skip-tags update.
 - name: Bring all packages up to date
   hosts: all
@@ -38,6 +39,15 @@
     - hardening
   roles:
     - role: sage.final.hardening
+
+- name: Configure WireGuard client tunnels
+  hosts: wireguard_clients
+  become: true
+  gather_facts: true
+  tags:
+    - wireguard_client
+  roles:
+    - role: sage.final.wireguard_client
 
 - name: Install Cockpit
   hosts: coserver

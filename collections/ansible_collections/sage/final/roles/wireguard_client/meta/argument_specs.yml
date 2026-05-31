@@ -1,0 +1,40 @@
+---
+argument_specs:
+  main:
+    short_description: Configure a split-tunnel WireGuard client peering with one external gateway.
+    options:
+      wireguard_client_interface:
+        type: str
+        default: wg0
+      wireguard_client_address:
+        type: str
+        required: true
+        description: "CIDR for this host inside the VPN, e.g. 10.8.0.5/24."
+      wireguard_client_listen_port:
+        type: int
+        default: 0
+      wireguard_client_private_key_path:
+        type: str
+        default: "/etc/wireguard/wg0.key"
+      wireguard_client_public_key_path:
+        type: str
+        default: "/etc/wireguard/wg0.pub"
+      wireguard_client_peer_public_key:
+        type: str
+        required: true
+        description: "OPNsense WireGuard instance public key."
+      wireguard_client_peer_endpoint:
+        type: str
+        required: true
+        description: "host:port of the OPNsense WireGuard endpoint."
+      wireguard_client_peer_allowed_ips:
+        type: list
+        elements: str
+        required: true
+        description: "Subnets to route via the tunnel (split-tunnel)."
+      wireguard_client_peer_persistent_keepalive:
+        type: int
+        default: 25
+      # wireguard_client_peer_preshared_key intentionally omitted from
+      # validation — users may vault it, and validate_argument_spec on
+      # ansible-core < 2.19 chokes on AnsibleVaultEncryptedUnicode types.

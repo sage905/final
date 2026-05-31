@@ -1,0 +1,23 @@
+# {{ ansible_managed }}
+# Managed by sage.final.wireguard_client.
+# The private key below is generated on the host; don't hand-edit.
+
+[Interface]
+PrivateKey = {{ wireguard_client_private_key }}
+Address = {{ wireguard_client_address }}
+{% if wireguard_client_listen_port | int > 0 %}
+ListenPort = {{ wireguard_client_listen_port }}
+{% endif %}
+
+[Peer]
+# OPNsense gateway
+PublicKey = {{ wireguard_client_peer_public_key }}
+{% if wireguard_client_peer_preshared_key | default('') | length > 0 %}
+PresharedKey = {{ wireguard_client_peer_preshared_key }}
+{% endif %}
+Endpoint = {{ wireguard_client_peer_endpoint }}
+# Split-tunnel: only the subnets listed here are routed via wg0.
+AllowedIPs = {{ wireguard_client_peer_allowed_ips | join(', ') }}
+{% if wireguard_client_peer_persistent_keepalive | int > 0 %}
+PersistentKeepalive = {{ wireguard_client_peer_persistent_keepalive }}
+{% endif %}
