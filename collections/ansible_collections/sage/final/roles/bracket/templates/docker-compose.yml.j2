@@ -31,6 +31,10 @@ services:
       SERVE_FRONTEND: "true"
       API_PREFIX: /api
       CORS_ORIGINS: "https://{{ bracket_fqdn }}"
+      # The browser-side base URL for API calls. The backend serves the
+      # frontend on the same origin, so point this at our public FQDN
+      # (defaults to http://localhost:8400, which breaks behind Caddy).
+      VITE_API_BASE_URL: "https://{{ bracket_fqdn }}/api"
       PG_DSN: "postgresql://{{ bracket_db_user }}:{{ bracket_effective_db_password }}@bracket-db:5432/{{ bracket_db_name }}"
     volumes:
       - "{{ bracket_data_dir }}/static:/app/static"
