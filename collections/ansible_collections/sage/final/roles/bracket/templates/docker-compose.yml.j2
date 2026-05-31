@@ -23,11 +23,14 @@ services:
     depends_on:
       - bracket-db
     environment:
-      ENVIRONMENT: PRODUCTION
+      # Upstream's only published images are :latest / :v3.0.0-rc1, whose
+      # PRODUCTION alembic chain breaks on a fresh DB (DROP INDEX
+      # ix_users_email). DEVELOPMENT initialises the schema directly and
+      # needs no JWT_SECRET, matching the upstream master compose.
+      ENVIRONMENT: DEVELOPMENT
       SERVE_FRONTEND: "true"
       API_PREFIX: /api
       CORS_ORIGINS: "https://{{ bracket_fqdn }}"
-      JWT_SECRET: "{{ bracket_effective_jwt_secret }}"
       PG_DSN: "postgresql://{{ bracket_db_user }}:{{ bracket_effective_db_password }}@bracket-db:5432/{{ bracket_db_name }}"
     volumes:
       - "{{ bracket_data_dir }}/static:/app/static"

@@ -53,15 +53,12 @@
     label: "{{ item.item }}"
   when: not item.stat.exists
 
-- name: Generate secrets if not supplied
+- name: Generate the DB password if not supplied
   ansible.builtin.include_tasks: _generate_secret.yml
   loop:
     - name: db_password
       override: "{{ bracket_db_password }}"
       length: 24
-    - name: jwt_secret
-      override: "{{ bracket_jwt_secret }}"
-      length: 48
   loop_control:
     loop_var: secret
 
@@ -78,20 +75,6 @@
     bracket_effective_db_password: "{{ bracket_db_password
                                        if bracket_db_password | length > 0
                                        else bracket_db_password_slurp.content | b64decode | trim }}"
-  no_log: true
-
-- name: Slurp the JWT secret from the host
-  ansible.builtin.slurp:
-    src: "{{ bracket_data_dir }}/secrets/jwt_secret"
-  register: bracket_jwt_secret_slurp
-  no_log: true
-  when: bracket_jwt_secret | length == 0
-
-- name: Resolve the effective JWT secret
-  ansible.builtin.set_fact:
-    bracket_effective_jwt_secret: "{{ bracket_jwt_secret
-                                      if bracket_jwt_secret | length > 0
-                                      else bracket_jwt_secret_slurp.content | b64decode | trim }}"
   no_log: true
 
 - name: Render docker-compose.yml

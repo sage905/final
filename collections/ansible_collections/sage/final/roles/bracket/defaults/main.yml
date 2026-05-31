@@ -1,10 +1,10 @@
 ---
 bracket_data_dir: /srv/bracket
 bracket_fqdn: ""
-# Pin to a stable release: the :latest tag tracks pre-releases (v3.0.0-rc1
-# shipped a broken migration that fails on a fresh DB with
-# "DROP INDEX ix_users_email does not exist"). v2.2.5 is the latest stable.
-bracket_image: ghcr.io/evroon/bracket:v2.2.5
+# Upstream publishes only :latest and :v3.0.0-rc1 (same build) on GHCR;
+# there is no stable per-version image to pin to. Run in DEVELOPMENT mode
+# (see the compose template) so this build initialises a fresh DB cleanly.
+bracket_image: ghcr.io/evroon/bracket:latest
 bracket_container_port: 8400
 
 # Postgres sidecar
@@ -13,10 +13,6 @@ bracket_db_name: bracket
 bracket_db_user: bracket
 # Leave empty to auto-generate and persist under {{ bracket_data_dir }}/secrets/.
 bracket_db_password: ""
-
-# Signing key for Bracket's JWTs (required by its ProductionConfig).
-# Leave empty to auto-generate and persist under {{ bracket_data_dir }}/secrets/.
-bracket_jwt_secret: ""
 
 # Shared infra provided by sage.final.caddy.
 bracket_shared_network: web

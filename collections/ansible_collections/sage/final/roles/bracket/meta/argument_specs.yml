@@ -11,7 +11,7 @@ argument_specs:
         required: true
       bracket_image:
         type: str
-        default: ghcr.io/evroon/bracket:v2.2.5
+        default: ghcr.io/evroon/bracket:latest
       bracket_container_port:
         type: int
         default: 8400
