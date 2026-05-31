@@ -7,6 +7,11 @@ services:
     image: {{ dashy_image }}
     container_name: dashy
     restart: always
+    # The image runs as the non-root "node" user. Add the host dashy
+    # group so node can read/write the group-owned user-data files.
+    user: node
+    group_add:
+      - "{{ dashy_gid }}"
     volumes:
       - "{{ dashy_data_dir }}/user-data:/app/user-data"
     networks:

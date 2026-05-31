@@ -13,8 +13,10 @@ dashy_shared_network: web
 dashy_install_podman: true
 
 # Rootful: stack runs via system podman. dashy_user owns the files on
-# disk. The dashy image runs as root inside, so root ownership on the
-# host matches container writes (no `:U` needed).
+# disk. The Dashy v4 image runs as the non-root "node" user (UID 1000),
+# so it cannot rely on owner access; instead the container joins the
+# dashy group (via group_add in the compose template) and reaches the
+# group-owned files through group-write modes set below.
 dashy_user: root
 
 # Group that owns Dashy's files. Admins in dashy_group_members can read

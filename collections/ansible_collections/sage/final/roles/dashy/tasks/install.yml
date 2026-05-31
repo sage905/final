@@ -3,6 +3,14 @@
   ansible.builtin.group:
     name: "{{ dashy_group }}"
     state: present
+  register: dashy_group_result
+
+# The Dashy v4 image runs as the non-root "node" user, which is not in
+# the host's dashy group. Pass this GID into the container via group_add
+# so node can read/write the group-owned files on the bind mount.
+- name: Record the Dashy group GID
+  ansible.builtin.set_fact:
+    dashy_gid: "{{ dashy_group_result.gid }}"
 
 - name: Add admin users to the Dashy group
   ansible.builtin.user:
