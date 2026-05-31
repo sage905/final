@@ -1,7 +1,10 @@
 ---
 bracket_data_dir: /srv/bracket
 bracket_fqdn: ""
-bracket_image: ghcr.io/evroon/bracket:latest
+# Pin to a stable release: the :latest tag tracks pre-releases (v3.0.0-rc1
+# shipped a broken migration that fails on a fresh DB with
+# "DROP INDEX ix_users_email does not exist"). v2.2.5 is the latest stable.
+bracket_image: ghcr.io/evroon/bracket:v2.2.5
 bracket_container_port: 8400
 
 # Postgres sidecar
