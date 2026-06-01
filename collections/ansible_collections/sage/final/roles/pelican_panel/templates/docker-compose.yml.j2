@@ -7,6 +7,13 @@ services:
     image: {{ pelican_panel_image }}
     container_name: pelican-panel
     restart: always
+    # The image runs as www-data (UID 82) and its internal Caddy binds
+    # {{ pelican_panel_container_port }} directly. Linux blocks non-root binds below 1024, and the
+    # image's caddy binary carries no file capabilities, so lower the
+    # unprivileged-port threshold inside this container's network namespace.
+    # List form (KEY=VALUE) — podman-compose 1.0.x mishandles the map form.
+    sysctls:
+      - "net.ipv4.ip_unprivileged_port_start={{ pelican_panel_container_port }}"
     environment:
       # XDG_DATA_HOME points Pelican's persistent state (SQLite database,
       # generated APP_KEY, settings) at the bind-mounted /pelican-data.
