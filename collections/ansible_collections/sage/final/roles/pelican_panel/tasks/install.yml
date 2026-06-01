@@ -21,30 +21,23 @@
     group: "{{ pelican_panel_group }}"
     mode: "2775"
 
-# Container-managed runtime subtrees. Created ONLY if missing — once they
-# exist, Pelican's entrypoint takes ownership (chowns /pelican-data to the
-# container's web user on first boot). The setgid bit on initial creation
-# means container-written files inherit the pelican group, so admins can
-# read via SFTP without sudo.
-- name: Stat pelican runtime subdirs
-  ansible.builtin.stat:
+# Runtime bind mounts. The Pelican image runs as www-data
+# (pelican_panel_container_uid) and writes its SQLite DB, .env, and logs
+# here, so these dirs must be owned by that UID — a root-owned bind mount
+# masks the image's own chown and the container gets "Permission denied".
+# Owner is asserted every run (not first-run-gated) so a previously
+# root-owned dir self-heals. setgid keeps the pelican group on new files
+# for SFTP read access; the container UID never changes it back.
+- name: Ensure pelican runtime dirs are owned by the container user
+  ansible.builtin.file:
     path: "{{ pelican_panel_data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ pelican_panel_container_uid }}"
+    group: "{{ pelican_panel_group }}"
+    mode: "2775"
   loop:
     - data
     - logs
-  register: pelican_panel_subdir_stat
-
-- name: Create pelican runtime subdirs (first run only)
-  ansible.builtin.file:
-    path: "{{ pelican_panel_data_dir }}/{{ item.item }}"
-    state: directory
-    owner: "{{ pelican_panel_user }}"
-    group: "{{ pelican_panel_group }}"
-    mode: "2775"
-  loop: "{{ pelican_panel_subdir_stat.results }}"
-  loop_control:
-    label: "{{ item.item }}"
-  when: not item.stat.exists
 
 - name: Render docker-compose.yml
   ansible.builtin.template:

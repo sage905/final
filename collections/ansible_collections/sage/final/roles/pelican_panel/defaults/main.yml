@@ -42,12 +42,20 @@ pelican_panel_shared_network: web
 # Set to false on hosts where Podman is already managed elsewhere.
 pelican_panel_install_podman: true
 
-# Rootful: stack runs via system podman. pelican_panel_user owns the files
-# on disk. Pelican's entrypoint chowns its data dir (XDG_DATA_HOME) to the
-# container's web user (www-data) on first start, so after first boot
-# /srv/pelican/data is owned by that UID — by design; manage the panel
-# through its web UI, not by editing the SQLite database on disk.
+# Rootful: stack runs via system podman. pelican_panel_user owns the
+# top-level compose project. The runtime data/log dirs are pre-chowned to
+# the container's web user instead (see pelican_panel_container_uid) so the
+# image — which runs as www-data and writes its SQLite DB, .env, and logs
+# there — can write through the bind mounts.
 pelican_panel_user: root
+
+# UID the Pelican image runs as inside the container. The official image is
+# Alpine-based with `USER www-data`, which is UID 82 on Alpine. The role
+# pre-chowns the bind-mounted data/log dirs to this UID (the same approach
+# sage.final.healthchecks uses, rather than podman's `:U` flag, which is
+# inconsistent across Ubuntu's podman versions). Override only if a future
+# image changes its runtime user.
+pelican_panel_container_uid: 82
 
 # Group that owns the panel's files. Admins in pelican_panel_group_members
 # can read/write /srv/pelican top-level files (compose) via SFTP.

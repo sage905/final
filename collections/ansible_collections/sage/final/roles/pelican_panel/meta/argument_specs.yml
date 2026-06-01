@@ -49,6 +49,12 @@ argument_specs:
       pelican_panel_user:
         type: str
         default: root
+      pelican_panel_container_uid:
+        type: int
+        default: 82
+        description: >-
+          UID the Pelican image runs as (www-data, UID 82 on the Alpine-based
+          image). The data/log bind mounts are pre-chowned to this UID.
       pelican_panel_group:
         type: str
         default: pelican

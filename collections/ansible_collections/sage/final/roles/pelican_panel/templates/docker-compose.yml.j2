@@ -16,8 +16,12 @@ services:
       APP_URL: "https://{{ pelican_panel_fqdn }}"
       APP_TIMEZONE: "{{ pelican_panel_timezone }}"
       ADMIN_EMAIL: "{{ pelican_panel_admin_email }}"
-      # Caddy terminates TLS and forwards over the shared network; trust the
-      # proxy so Pelican builds correct https URLs and sees the real client IP.
+      # The shared Caddy terminates TLS in front of this stack. BEHIND_PROXY
+      # tells Pelican's in-container Caddy to serve plain HTTP on :80 and skip
+      # its own Let's Encrypt provisioning (which otherwise demands LE_EMAIL
+      # and fails behind a proxy). TRUSTED_PROXIES lets Laravel build correct
+      # https URLs and see the real client IP from the proxy headers.
+      BEHIND_PROXY: "true"
       TRUSTED_PROXIES: "*"
       MAIL_DRIVER: "{{ pelican_panel_mail_driver }}"
     volumes:
