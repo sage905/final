@@ -84,11 +84,27 @@ To switch:
    managed go offline until the new node config is in place).
 4. Re-create the node in the **Pelican** Panel and drop its `config.yml` into
    `/etc/pelican/config.yml`, then `systemctl start wings`.
-5. Once the new node is confirmed working, the now-unused
+5. **Remove the leftover Pterodactyl Wings network.** Pterodactyl Wings creates
+   a `pterodactyl_nw` bridge on `172.18.0.0/16`; Pelican Wings wants the same
+   default subnet for its own `pelican0` network and will FATAL with
+   `subnet 172.18.0.0/16 is already used` until the old one is gone. Once no
+   game servers depend on it:
+
+   ```bash
+   sudo podman network rm pterodactyl_nw
+   sudo systemctl restart wings
+   ```
+
+6. Once the new node is confirmed working, the now-unused
    `/etc/pterodactyl/config.yml` can be removed.
 
 > Game servers do not migrate automatically — they're registered against a
 > specific panel. Recreate your servers in the Pelican Panel after switching.
+
+> The `pelican` system user collision and the `pterodactyl_nw` subnet clash
+> above both stem from a host having previously run the Pterodactyl stack. The
+> role pre-creates the `pelican` user to avoid the first; the network must be
+> removed by hand (it may still hold servers, so the role won't delete it).
 
 Operations
 ----------
