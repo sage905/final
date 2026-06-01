@@ -38,6 +38,13 @@ pelican_panel_mail_driver: log
 # --- Shared network (provided by sage.final.caddy) ----------------------------
 pelican_panel_shared_network: web
 
+# Proxies the in-container Caddy trusts (for X-Forwarded-* headers). Pelican
+# passes this into Caddy's `trusted_proxies static`, so it must be valid
+# comma-separated CIDRs — not Laravel's `*`. Defaults to all RFC1918 ranges,
+# which covers whatever private subnet podman assigns the shared `web`
+# network (10.89.0.0/24 by default). Tighten to the exact subnet if you want.
+pelican_panel_trusted_proxies: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
 # --- Container runtime install -----------------------------------------------
 # Set to false on hosts where Podman is already managed elsewhere.
 pelican_panel_install_podman: true

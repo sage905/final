@@ -19,10 +19,13 @@ services:
       # The shared Caddy terminates TLS in front of this stack. BEHIND_PROXY
       # tells Pelican's in-container Caddy to serve plain HTTP on :80 and skip
       # its own Let's Encrypt provisioning (which otherwise demands LE_EMAIL
-      # and fails behind a proxy). TRUSTED_PROXIES lets Laravel build correct
-      # https URLs and see the real client IP from the proxy headers.
+      # and fails behind a proxy).
       BEHIND_PROXY: "true"
-      TRUSTED_PROXIES: "*"
+      # Comma-separated CIDRs the in-container Caddy trusts as upstream
+      # proxies (NOT a Laravel `*` — Pelican feeds this into Caddy's
+      # `trusted_proxies static`, which needs real CIDRs). Covers the private
+      # range the shared `web` podman network is assigned from.
+      TRUSTED_PROXIES: "{{ pelican_panel_trusted_proxies }}"
       MAIL_DRIVER: "{{ pelican_panel_mail_driver }}"
     volumes:
       - "{{ pelican_panel_data_dir }}/data:/pelican-data"

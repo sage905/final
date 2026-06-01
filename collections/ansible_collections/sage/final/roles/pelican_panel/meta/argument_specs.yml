@@ -43,6 +43,13 @@ argument_specs:
       pelican_panel_shared_network:
         type: str
         default: web
+      pelican_panel_trusted_proxies:
+        type: str
+        default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+        description: >-
+          Comma-separated CIDRs the in-container Caddy trusts as proxies.
+          Must be valid CIDRs (fed to Caddy's trusted_proxies static), not
+          Laravel's `*`.
       pelican_panel_install_podman:
         type: bool
         default: true
