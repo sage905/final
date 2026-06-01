@@ -77,6 +77,92 @@
                                        else bracket_db_password_slurp.content | b64decode | trim }}"
   no_log: true
 
+# The published image bakes VITE_API_BASE_URL=http://localhost:8400/api into
+# the frontend bundle (served from /app/frontend-dist), which breaks behind
+# the public FQDN — the browser tries to reach its own localhost. There is no
+# runtime override (Vite inlines it at build time), so extract the assets,
+# rewrite the baked origin to the public FQDN, and bind-mount them back
+# read-only. Re-extracted only when the image ID changes, to stay in sync.
+- name: Create the patched frontend-dist directory
+  ansible.builtin.file:
+    path: "{{ bracket_data_dir }}/frontend-dist"
+    state: directory
+    owner: "{{ bracket_user }}"
+    group: "{{ bracket_group }}"
+    mode: "0755"
+
+- name: Pull the Bracket image
+  ansible.builtin.command:
+    cmd: "podman pull {{ bracket_image }}"
+  register: bracket_pull
+  changed_when: "'Storing signatures' in bracket_pull.stdout"
+
+- name: Get the Bracket image ID
+  ansible.builtin.command:
+    cmd: "podman images --quiet --no-trunc {{ bracket_image }}"
+  register: bracket_image_id
+  changed_when: false
+
+- name: Read the last-patched image marker
+  ansible.builtin.slurp:
+    src: "{{ bracket_data_dir }}/frontend-dist/.patched-image-id"
+  register: bracket_dist_marker
+  failed_when: false
+  changed_when: false
+
+- name: Extract and patch the frontend assets when the image changed
+  when: >-
+    bracket_dist_marker.content is not defined
+    or (bracket_dist_marker.content | b64decode | trim) != bracket_image_id.stdout | trim
+  notify: Recreate bracket stack
+  block:
+    - name: Remove any stale extraction container
+      ansible.builtin.command:
+        cmd: podman rm -f bracket-extract
+      changed_when: false
+      failed_when: false
+
+    - name: Reset the patched frontend-dist directory
+      ansible.builtin.file:
+        path: "{{ bracket_data_dir }}/frontend-dist"
+        state: "{{ item }}"
+        owner: "{{ bracket_user }}"
+        group: "{{ bracket_group }}"
+        mode: "0755"
+      loop:
+        - absent
+        - directory
+
+    - name: Create a transient container to extract the assets
+      ansible.builtin.command:
+        cmd: "podman create --name bracket-extract {{ bracket_image }}"
+      changed_when: true
+
+    - name: Copy frontend-dist out of the image
+      ansible.builtin.command:
+        cmd: "podman cp bracket-extract:/app/frontend-dist/. {{ bracket_data_dir }}/frontend-dist/"
+      changed_when: true
+
+    - name: Remove the transient container
+      ansible.builtin.command:
+        cmd: "podman rm bracket-extract"
+      changed_when: true
+
+    - name: Rewrite the baked API origin to the public FQDN
+      ansible.builtin.shell:
+        cmd: >-
+          grep -rl 'http://localhost:8400' {{ bracket_data_dir }}/frontend-dist
+          | xargs -r sed -i 's#http://localhost:8400#https://{{ bracket_fqdn }}#g'
+      changed_when: true
+
+    - name: Record the patched image ID
+      ansible.builtin.copy:
+        content: "{{ bracket_image_id.stdout | trim }}\n"
+        dest: "{{ bracket_data_dir }}/frontend-dist/.patched-image-id"
+        owner: "{{ bracket_user }}"
+        group: "{{ bracket_group }}"
+        mode: "0644"
+
 - name: Render docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2
