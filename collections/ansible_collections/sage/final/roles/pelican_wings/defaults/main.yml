@@ -1,0 +1,47 @@
+---
+# --- Wings binary -------------------------------------------------------------
+# `latest` pulls https://github.com/pelican-dev/wings/releases/latest/download/...
+# Pin to a release tag (without the leading "v", e.g. 1.0.0-beta25) for
+# reproducible installs.
+pelican_wings_version: latest
+
+pelican_wings_binary_path: /usr/local/bin/wings
+
+# Architecture suffix on the Wings release asset names.
+pelican_wings_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+
+# --- Filesystem layout --------------------------------------------------------
+# Pelican Wings defaults to /etc/pelican (Pterodactyl Wings used
+# /etc/pterodactyl). These are separate so a host can be switched between
+# the two without the config files clashing.
+pelican_wings_config_dir: /etc/pelican
+pelican_wings_data_dir: /var/lib/pelican
+pelican_wings_log_dir: /var/log/pelican
+
+# Group that owns Wings's config and log files (the data dir stays
+# root-only — directly editing game-server state would corrupt running
+# servers). Members listed below can read config.yml and tail logs
+# without sudo. Users must already exist on the host.
+pelican_wings_group: pelican_wings
+pelican_wings_group_members: []
+
+# Optional: drop a Wings config.yml fetched from the Pelican Panel onto the
+# host. Provide the file contents (typically read with `lookup('file', ...)`)
+# — when empty the role installs the binary and unit but leaves config.yml to
+# the operator (paste from the Panel UI: Admin → Nodes → Configuration).
+pelican_wings_config_yaml: ""
+
+# --- System tuning ------------------------------------------------------------
+# Wings needs cgroup swap accounting to enforce per-container memory+swap
+# limits. Adds `swapaccount=1` to GRUB_CMDLINE_LINUX_DEFAULT. Requires a reboot
+# to take effect.
+pelican_wings_enable_swap_accounting: true
+
+# --- Container runtime install ------------------------------------------------
+# Set to false on hosts where Podman is already managed elsewhere. Wings is
+# pointed at Podman's Docker-compatible socket via DOCKER_HOST in the unit.
+# Upstream Pelican Wings targets Docker; this works because podman.socket
+# emulates the Docker API, but treat as best-effort.
+pelican_wings_install_podman: true

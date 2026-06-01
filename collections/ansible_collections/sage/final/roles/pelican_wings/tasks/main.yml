@@ -1,0 +1,16 @@
+---
+- name: Validate role arguments
+  ansible.builtin.validate_argument_spec:
+    argument_spec: >-
+      {{ (lookup('ansible.builtin.file',
+                 role_path ~ '/meta/argument_specs.yml')
+          | from_yaml)['argument_specs']['main']['options'] }}
+
+- name: Install container runtime and system prerequisites
+  ansible.builtin.import_tasks: dependencies.yml
+
+- name: Install the Wings binary and systemd unit
+  ansible.builtin.import_tasks: install.yml
+
+- name: Apply Wings configuration and start the service
+  ansible.builtin.import_tasks: configure.yml

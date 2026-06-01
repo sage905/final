@@ -1,0 +1,48 @@
+---
+argument_specs:
+  main:
+    short_description: Install the Pelican Wings daemon.
+    options:
+      pelican_wings_version:
+        type: str
+        default: latest
+        description: Release tag (without leading "v") or "latest".
+      pelican_wings_binary_path:
+        type: path
+        default: /usr/local/bin/wings
+      pelican_wings_arch_map:
+        type: dict
+        default:
+          x86_64: amd64
+          aarch64: arm64
+      pelican_wings_config_dir:
+        type: path
+        default: /etc/pelican
+      pelican_wings_data_dir:
+        type: path
+        default: /var/lib/pelican
+      pelican_wings_log_dir:
+        type: path
+        default: /var/log/pelican
+      pelican_wings_group:
+        type: str
+        default: pelican_wings
+      pelican_wings_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          System users granted group-read access to /etc/pelican and
+          /var/log/pelican. The data dir stays root-only. Listed
+          users must already exist on the host.
+      pelican_wings_config_yaml:
+        type: str
+        default: ""
+        description: Contents of /etc/pelican/config.yml. Leave empty to paste from the Panel manually.
+      pelican_wings_enable_swap_accounting:
+        type: bool
+        default: true
+        description: Adds swapaccount=1 to GRUB; reboot required for it to apply.
+      pelican_wings_install_podman:
+        type: bool
+        default: true

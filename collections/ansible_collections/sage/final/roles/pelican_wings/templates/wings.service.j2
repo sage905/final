@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Pelican Wings Daemon
+After=podman.socket
+Requires=podman.socket
+PartOf=podman.socket
+
+[Service]
+User=root
+WorkingDirectory={{ pelican_wings_config_dir }}
+LimitNOFILE=4096
+PIDFile=/var/run/wings/daemon.pid
+Environment=DOCKER_HOST=unix:///run/podman/podman.sock
+ExecStart={{ pelican_wings_binary_path }} --config {{ pelican_wings_config_dir }}/config.yml
+Restart=on-failure
+StartLimitInterval=180
+StartLimitBurst=30
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

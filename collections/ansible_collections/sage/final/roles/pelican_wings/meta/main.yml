@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: pelican_wings
+  namespace: sage
+  author: Sage
+  description: Install the Pelican Wings daemon on an Ubuntu game-server node.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - pelican
+    - wings
+    - gameserver
+    - daemon
+dependencies: []
