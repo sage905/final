@@ -20,7 +20,18 @@ argument_specs:
         default: /etc/pelican
       pelican_wings_data_dir:
         type: path
-        default: /var/lib/pelican
+        default: /srv/gameservers
+        description: >-
+          Wings root/data dir holding game-server volumes. Shared with
+          sage.final.pterodactyl_wings. The node's config.yml system.data must
+          point under here.
+      pelican_wings_backup_dir:
+        type: path
+        default: /srv/bulk/gamebackups
+        description: >-
+          Where Wings stores server backups. Under /srv/bulk (excluded from
+          the borg backup). The node's config.yml system.backup_directory
+          must point here.
       pelican_wings_log_dir:
         type: path
         default: /var/log/pelican

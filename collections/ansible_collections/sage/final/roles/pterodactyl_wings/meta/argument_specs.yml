@@ -20,7 +20,18 @@ argument_specs:
         default: /etc/pterodactyl
       pterodactyl_wings_data_dir:
         type: path
-        default: /var/lib/pterodactyl
+        default: /srv/gameservers
+        description: >-
+          Wings root/data dir holding game-server volumes. Shared with
+          sage.final.pelican_wings. The node's config.yml system.data must
+          point under here.
+      pterodactyl_wings_backup_dir:
+        type: path
+        default: /srv/bulk/gamebackups
+        description: >-
+          Where Wings stores server backups. Under /srv/bulk (excluded from
+          the borg backup). The node's config.yml system.backup_directory
+          must point here.
       pterodactyl_wings_log_dir:
         type: path
         default: /var/log/pterodactyl

@@ -13,8 +13,23 @@ pterodactyl_wings_arch_map:
 
 # --- Filesystem layout --------------------------------------------------------
 pterodactyl_wings_config_dir: /etc/pterodactyl
-pterodactyl_wings_data_dir: /var/lib/pterodactyl
 pterodactyl_wings_log_dir: /var/log/pterodactyl
+
+# Wings root/data directory — where game-server volumes are stored. Shared
+# with sage.final.pelican_wings (both default here) so switching panels keeps
+# server files in the same place. The node's config.yml must agree: set the
+# "Daemon Server File Directory" (system.data) under this path when creating
+# the node in the Panel, e.g. /srv/gameservers/volumes.
+# NOTE: this lives under /srv, so it is covered by the sage.final.borg nightly
+# backup. Add it to borg_exclude_patterns if game-server data is large and you
+# don't want it backed up.
+pterodactyl_wings_data_dir: /srv/gameservers
+
+# Where Wings stores server backups (local backup driver). Under /srv/bulk,
+# which sage.final.borg EXCLUDES from the offsite backup — game-server
+# backups are already backups, no need to re-upload them. The node's
+# config.yml system.backup_directory must point here to take effect.
+pterodactyl_wings_backup_dir: /srv/bulk/gamebackups
 
 # Group that owns Wings's config and log files (the data dir stays
 # root-only — directly editing game-server state would corrupt running

@@ -37,7 +37,21 @@ Bootstrapping a node
    and installs the `wings` systemd unit. The service is enabled but stays
    stopped while `config.yml` is missing.
 2. In the Pelican Panel UI, **Admin → Nodes → Create Node**, fill in this
-   host's FQDN and ports.
+   host's FQDN and ports. Set the **Daemon Server File Directory** to
+   `/srv/gameservers/volumes` so server files land under the role-managed
+   `pelican_wings_data_dir` (`/srv/gameservers`). If you leave the panel
+   default, Wings writes to that default instead and ignores `/srv/gameservers`.
+3. After copying `config.yml` to the host, set the backup path in it so
+   server backups go to the role-managed `pelican_wings_backup_dir`:
+
+   ```yaml
+   system:
+     backup_directory: /srv/bulk/gamebackups
+   ```
+
+   `/srv/bulk` is excluded from the offsite borg backup, so game-server
+   backups aren't re-uploaded. The panel UI doesn't expose this field — edit
+   `config.yml` directly (or bake it into `pelican_wings_config_yaml`).
 3. Open the new node's **Configuration** tab and copy the generated
    `config.yml` to `/etc/pelican/config.yml` (or pass it as
    `pelican_wings_config_yaml`, vaulted, on a re-run).

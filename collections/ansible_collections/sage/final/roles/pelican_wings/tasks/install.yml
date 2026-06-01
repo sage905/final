@@ -27,13 +27,16 @@
     - "{{ pelican_wings_config_dir }}"
     - "{{ pelican_wings_log_dir }}"
 
-- name: Create Wings data directory (root-only)
+- name: Create Wings data and backup directories (root-only)
   ansible.builtin.file:
-    path: "{{ pelican_wings_data_dir }}"
+    path: "{{ item }}"
     state: directory
     owner: root
     group: root
     mode: "0700"
+  loop:
+    - "{{ pelican_wings_data_dir }}"
+    - "{{ pelican_wings_backup_dir }}"
 
 - name: Resolve Wings download URL
   ansible.builtin.set_fact:
