@@ -33,6 +33,22 @@ failures, patches itself, and is firewalled against the internet.
 All your data lives in one place: **`/srv`**. Back that up and you've backed up
 everything.
 
+### This server at a glance
+
+| | |
+|---|---|
+| **Server name** | `coserver` |
+| **Your domain** | `chemicaloutlaws.com` |
+| **Admin user accounts** | `sage`, `final` (these can edit app files over SFTP) |
+| **How the automation connects** | It runs **locally on `coserver` itself** as `root` (`connection: local`) — you run the playbook on the server, not from another machine. |
+| **Offsite backups** | Hetzner Storage Box `u483449-sub3.your-storagebox.de`, nightly at 03:00 |
+| **Private network (VPN)** | This server is `192.168.129.2`, tunnelling to gateway `gate.toal.ca:51821` |
+
+> **One thing to fix when you get a chance** (details in Section 9): the host
+> firewall (UFW) is switched off. Today the server relies on the upstream gateway
+> for perimeter filtering; turning on the host firewall is recommended.
+> (Automatic security patching *is* on.)
+
 ---
 
 ## 2. How it all fits together
@@ -41,29 +57,31 @@ everything.
 
 ```mermaid
 flowchart LR
-    User([Public visitor]) -->|HTTPS 443| FW
-    Admin([You, via VPN]) -->|WireGuard tunnel| FW
+    User([Public visitor]) -->|HTTPS 443| Caddy
+    Admin([You, via WireGuard VPN]) -->|gate.toal.ca| Caddy
 
-    subgraph Server["Ubuntu Server"]
-        FW[UFW Firewall<br/>only 80, 443, 22, game ports]
-        FW --> Caddy[Caddy<br/>front door + auto-HTTPS]
+    subgraph Server["coserver (Ubuntu)"]
+        Caddy[Caddy<br/>front door + auto-HTTPS]
 
-        Caddy -->|panel.yourdomain| Ptero[Pterodactyl Panel]
-        Caddy -->|www.yourdomain| WP[WordPress]
-        Caddy -->|media.yourdomain| JF[Jellyfin]
-        Caddy -->|dash.yourdomain| Dashy[Dashy]
-        Caddy -->|home.yourdomain| Glance[Glance]
-        Caddy -->|tournaments.yourdomain| Bracket[Bracket]
-        Caddy -.->|internal only| HC[Healthchecks]
-        Caddy -.->|internal only| Port[Portainer]
+        Caddy -->|chemicaloutlaws.com| WP[WordPress]
+        Caddy -->|panel.chemicaloutlaws.com| Ptero[Pterodactyl Panel]
+        Caddy -->|node.chemicaloutlaws.com| Wings[Pterodactyl Wings]
+        Caddy -->|media.chemicaloutlaws.com| JF[Jellyfin]
+        Caddy -->|bracket.chemicaloutlaws.com| Bracket[Bracket]
+        Caddy -.->|dashy.chemicaloutlaws.com<br/>internal only| Dashy[Dashy]
+        Caddy -.->|glance.chemicaloutlaws.com<br/>internal only| Glance[Glance]
+        Caddy -.->|portainer.chemicaloutlaws.com<br/>internal only| Port[Portainer]
+        Caddy -.->|healthchecks.chemicaloutlaws.com<br/>internal only| HC[Healthchecks]
     end
 
-    Ptero --- Wings[Pterodactyl Wings<br/>runs game servers]
+    Ptero --- Wings
 ```
 
-Everything inside the dotted **internal only** lines is reachable from your
-private network (over the WireGuard VPN) but invisible to the public internet.
-All containers talk to each other on a private Podman network called `web`.
+Solid lines are **public** (anyone on the internet can reach them). The dotted
+**internal only** sites (Dashy, Glance, Portainer, Healthchecks) return "403
+Access denied" unless the visitor comes from your private network — currently
+`192.168.0.0/16` or the single address `152.86.19.239`. All containers talk to
+each other on a private Podman network called `web`.
 
 ### Where things live on disk
 
@@ -84,27 +102,27 @@ flowchart TD
 
 ### Apps you and your users visit
 
-| Application | Purpose | Web address (you choose) | Data folder |
-|---|---|---|---|
-| **Pterodactyl Panel** | Control panel for game servers (Minecraft, etc.) | `panel.yourdomain` | `/srv/pterodactyl` |
-| **Pterodactyl Wings** | The engine that actually runs game servers (managed from the Panel) | — (no web page) | `/etc/pterodactyl`, `/var/lib/pterodactyl` |
-| **WordPress** | Website / blog | `www.yourdomain` | `/srv/wordpress` |
-| **Jellyfin** | Private media streaming (movies, TV, music) | `media.yourdomain` | `/srv/jellyfin` |
-| **Dashy** | Customisable links/tiles dashboard | `dash.yourdomain` | `/srv/dashy` |
-| **Glance** | Lightweight info dashboard (feeds, widgets) | `home.yourdomain` | `/srv/glance` |
-| **Bracket** | Tournament-bracket system | `tournaments.yourdomain` | `/srv/bracket` |
+| Application | Purpose | Web address | Public? | Data folder |
+|---|---|---|---|---|
+| **WordPress** | Website / blog (your main site) | `chemicaloutlaws.com` | Public | `/srv/wordpress` |
+| **Pterodactyl Panel** | Control panel for game servers (Minecraft, etc.) | `panel.chemicaloutlaws.com` | Public | `/srv/pterodactyl` |
+| **Pterodactyl Wings** | The engine that runs game servers (managed from the Panel) | `node.chemicaloutlaws.com` | Public | `/etc/pterodactyl`, `/var/lib/pterodactyl` |
+| **Jellyfin** | Private media streaming (movies, TV, music) | `media.chemicaloutlaws.com` | Public | `/srv/jellyfin` (media in `/srv/bulk`) |
+| **Bracket** | Tournament-bracket system | `bracket.chemicaloutlaws.com` | Public | `/srv/bracket` |
+| **Dashy** | Customisable links/tiles dashboard | `dashy.chemicaloutlaws.com` | Internal only | `/srv/dashy` |
+| **Glance** | Lightweight info dashboard (feeds, widgets) | `glance.chemicaloutlaws.com` | Internal only | `/srv/glance` |
 
 ### Behind-the-scenes services
 
 | Component | Purpose | How to reach it |
 |---|---|---|
 | **Caddy** | Web front door; auto-HTTPS; routes addresses to apps | `/srv/caddy` |
-| **Healthchecks** | Alerts you when a scheduled job (e.g. backup) fails to check in | `healthchecks.yourdomain` (internal only) |
-| **Borg / Borgmatic** | Encrypted nightly offsite backup of `/srv` | runs from a systemd timer |
-| **Cockpit** | Web dashboard for the **machine** (CPU, RAM, disks, logs, updates) | `https://your-server:9090` |
-| **Portainer** | Web dashboard for the **containers** (restart, logs, terminal) | `portainer.yourdomain` (internal only) |
-| **Hardening** | Firewall, intrusion blocking, SSH lock-down, auto security patches | system-wide |
-| **WireGuard** | Encrypted VPN tunnel to your private network/gateway | `/etc/wireguard/wg0.conf` |
+| **Healthchecks** | Alerts you when a scheduled job (e.g. backup) fails to check in | `healthchecks.chemicaloutlaws.com` (internal only) |
+| **Borg / Borgmatic** | Encrypted nightly offsite backup of `/srv` to Hetzner | runs from a systemd timer |
+| **Cockpit** | Web dashboard for the **machine** (CPU, RAM, disks, logs, updates) | `https://coserver:9090` (or the server's LAN IP) |
+| **Portainer** | Web dashboard for the **containers** (restart, logs, terminal) | `portainer.chemicaloutlaws.com` (internal only) |
+| **Hardening** | SSH lock-down, fail2ban, kernel hardening, automatic security patches (host firewall is *off* — see Section 9) | system-wide |
+| **WireGuard** | Encrypted VPN tunnel to your private network (gateway `gate.toal.ca`) | `/etc/wireguard/wg0.conf` |
 
 > The folders `disk_os`, `disk_pool`, `disk_stripe`, and `run` in the project are
 > empty placeholders that set up nothing. Ignore them.
@@ -143,17 +161,18 @@ indefinitely by hand if you choose (Section 11).
 
 You rarely need the command line. Two web dashboards cover most tasks:
 
-- **Cockpit — the machine.** Open `https://your-server-address:9090`, sign in
-  with your normal server login. See disk space, memory, running services,
-  system logs, and apply OS updates with a click. It also has a built-in
-  **Terminal** and **File browser** if you want them.
+- **Cockpit — the machine.** Open `https://coserver:9090` (or the server's LAN
+  IP, e.g. `https://192.168.129.2:9090`), sign in with your normal server login.
+  See disk space, memory, running services, system logs, and apply OS updates
+  with a click. It also has a built-in **Terminal** and **File browser** if you
+  want them.
 
-- **Portainer — the apps.** Open the Portainer address (internal-only; connect
-  via WireGuard first). On first visit, create the admin account and accept the
-  "local" environment. Use it to restart an app, read its logs, open a shell
-  inside a container, or check resource usage. Your Ansible-deployed stacks show
-  up as **Limited** — that's expected; Portainer can still manage their
-  containers.
+- **Portainer — the apps.** Open `https://portainer.chemicaloutlaws.com` from
+  your private network or over the WireGuard VPN (it's internal-only). On first
+  visit, create the admin account and accept the "local" environment. Use it to
+  restart an app, read its logs, open a shell inside a container, or check
+  resource usage. Your Ansible-deployed stacks show up as **Limited** — that's
+  expected; Portainer can still manage their containers.
 
 ---
 
@@ -217,14 +236,17 @@ Caddy decides which web address goes to which app, and handles all HTTPS.
 a block like this:
 
 ```caddyfile
-media.yourdomain {
+media.chemicaloutlaws.com {
     encode gzip
     reverse_proxy jellyfin:8096
 }
 ```
 
-To make a site internal-only (reachable only from your VPN/LAN), add
-`import internal_only` inside its block.
+To make a site **internal only** (reachable only from your private network), add
+`import internal_only` inside its block — this is how Dashy, Glance, Portainer,
+and Healthchecks are set up. "Internal" is defined by the `caddy_internal_cidrs` list (currently
+`192.168.0.0/16` and `152.86.19.239/32`); any visitor outside those ranges gets
+a 403.
 
 **After editing the Caddyfile, reload Caddy without downtime:**
 
@@ -247,9 +269,17 @@ This is the most important section. Read it once now, not during an emergency.
 
 **What happens automatically:**
 - Every night around **03:00**, `borgmatic` makes an encrypted backup of `/srv`
-  (excluding `/srv/bulk`) and uploads it to your offsite Hetzner Storage Box.
+  (excluding `/srv/bulk`) and uploads it to your offsite Hetzner Storage Box
+  (`u483449-sub3.your-storagebox.de`).
 - It keeps **30 daily, 12 monthly, 10 yearly** snapshots and prunes the rest.
-- Each run pings **Healthchecks**, which alerts you if a backup is ever missed.
+- Each run pings **Healthchecks** (a ping URL is already configured), which
+  alerts you if a backup is ever missed.
+
+> **What is NOT backed up:** `/srv/bulk` is deliberately excluded — and your
+> **Jellyfin media library lives in `/srv/bulk`**. So your movies/TV/music are
+> *not* in the nightly backup (sensible: it's large and usually replaceable).
+> Jellyfin's *settings* under `/srv/jellyfin` **are** backed up. If your media is
+> irreplaceable, arrange a separate copy of `/srv/bulk`.
 
 **The one thing you must protect:** the backup **passphrase** (and the offsite
 storage login). If the passphrase is lost, *no one* — including you — can ever
@@ -299,16 +329,9 @@ flowchart LR
 
 ---
 
-## 9. Security you already have (and how to manage it)
+## 9. Security: what's on, what's off, what to fix
 
-**Firewall (UFW).** Default-deny inbound; only the ports your services need are
-open.
-
-```bash
-sudo ufw status numbered     # see all rules
-sudo ufw allow 8080/tcp      # open a new port
-sudo ufw delete <number>     # remove a rule by its number
-```
+### Already active
 
 **Intrusion blocking (fail2ban).** Automatically bans IPs that repeatedly fail
 SSH logins.
@@ -318,20 +341,49 @@ sudo fail2ban-client status sshd            # see current bans
 sudo fail2ban-client set sshd unbanip <IP>  # lift a ban
 ```
 
-**SSH.** Locked to key-based login (no passwords). Settings live in the drop-in
-file `/etc/ssh/sshd_config.d/99-hardening.conf`. After editing it,
+**SSH lock-down.** Login is key-based only (no passwords). Settings live in the
+drop-in file `/etc/ssh/sshd_config.d/99-hardening.conf`. After editing it,
 `sudo systemctl reload ssh`.
 
-**Automatic security patches** are enabled (unattended-upgrades). You can also
-patch on demand:
+**Kernel hardening** (sysctl) is applied via `/etc/sysctl.d/99-hardening.conf`.
+
+**Automatic security patches** are active (Ubuntu's `unattended-upgrades`). You
+can also patch on demand with `sudo apt update && sudo apt upgrade`.
+
+**WireGuard VPN.** Connects this server (`192.168.129.2`) to your private network
+through the gateway `gate.toal.ca:51821`, so internal-only sites stay private.
 
 ```bash
-sudo apt update && sudo apt upgrade
+sudo wg show                              # is the tunnel up?
+sudo systemctl restart wg-quick@wg0       # restart the tunnel
 ```
 
-**WireGuard VPN.** Connects this server to your private network so internal-only
-tools stay private. Check it with `sudo wg show`; restart with
-`sudo systemctl restart wg-quick@wg0`.
+### Currently OFF — recommended to turn on
+
+These protections exist in the setup but are **not enabled** in your current
+configuration. The server presently leans on the upstream gateway for perimeter
+filtering.
+
+**1. Host firewall (UFW)** — not active. To enable a default-deny firewall that
+still allows your services, you can switch it on in the automation
+(`hardening_firewall_enabled: true` in inventory, then re-run `--tags
+hardening`), or do it by hand:
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp        # SSH — add this BEFORE enabling, or you lock yourself out
+sudo ufw allow 80,443/tcp    # web
+sudo ufw allow 9090/tcp      # Cockpit
+sudo ufw allow 25565/tcp     # Minecraft (adjust to your games)
+sudo ufw enable
+sudo ufw status numbered     # review
+```
+
+**2. Rotate the Healthchecks admin password.** The Healthchecks superuser
+(`admin@chemicaloutlaws.com`) was bootstrapped with a weak password stored in
+plain text in the inventory. Change it in the Healthchecks web UI, and replace
+the inventory value with an `ansible-vault`-encrypted one.
 
 ---
 
@@ -340,6 +392,10 @@ tools stay private. Check it with `sudo wg show`; restart with
 The whole server is described in the Ansible playbook `site.yml`. Re-running it
 is safe — it only changes what no longer matches the description. This is the
 tidy way to make a change *and* keep it recorded.
+
+In this setup Ansible is configured to run **on `coserver` itself**
+(`connection: local`), so you run these commands while logged in to the server,
+from the project checkout.
 
 ```bash
 # Re-apply everything
@@ -386,16 +442,17 @@ Ansible was only the installer. To operate without it forever:
    - any app admin passwords you set, plus what's in each
      `/srv/<app>/secrets/`.
 
-3. **Make containers survive reboots without Ansible.** The stacks use
-   `restart: always`, which Podman honours on boot when its restart service is
-   enabled:
+3. **Containers already survive reboots.** The stacks use `restart: always`, and
+   `podman-restart.service` is **enabled and active** on this server, so apps
+   come back automatically after a reboot — no Ansible needed. Confirm any time
+   with:
 
    ```bash
-   sudo systemctl enable podman-restart.service
+   systemctl is-enabled podman-restart.service   # -> enabled
+   sudo podman ps                                 # all stacks running
    ```
 
-   After that, reboot once and confirm every app comes back with
-   `sudo podman ps`. (If any stack is down after a reboot, just
+   (If a stack is ever down after a reboot, just
    `cd /srv/<app> && sudo podman-compose up -d`.)
 
 4. **From then on, manage each app directly** with the commands in Sections 6–9:
@@ -421,7 +478,7 @@ you fully control by hand.
 | App is running but errors | `cd /srv/<app> && sudo podman-compose logs -f` and read the recent lines. |
 | HTTPS certificate warning | Confirm the DNS name points at the server and ports 80/443 are open to the internet, then reload Caddy: `sudo podman exec caddy caddy reload --config /etc/caddy/Caddyfile`. Check Caddy's logs for the ACME error. |
 | Backup alert from Healthchecks | Run `sudo borgmatic` manually and read the output; confirm the Hetzner box is reachable. Check `systemctl status borgmatic.service`. |
-| Can't reach an "internal only" tool | It's private on purpose — connect through the WireGuard VPN first (`sudo wg show` to confirm the tunnel is up). |
+| Can't reach Dashy, Glance, Portainer, or Healthchecks | They're internal-only on purpose — reach them from your private network (`192.168.0.0/16`) or over the WireGuard VPN. Confirm the tunnel with `sudo wg show`. |
 | Locked out / blocked by fail2ban | From an allowed network: `sudo fail2ban-client set sshd unbanip <your-IP>`. |
 | Whole server unreachable | Use your hosting provider's console to confirm it's powered on; check Cockpit at `:9090`. |
 | Server low on disk | In Cockpit, or `df -h`. Old container images can be cleared with `sudo podman image prune`. Remember `/srv/bulk` is not backed up — safe place for large temporary files. |
