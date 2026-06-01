@@ -43,6 +43,14 @@ pelican_wings_backup_dir: /srv/bulk/gamebackups
 pelican_wings_group: pelican_wings
 pelican_wings_group_members: []
 
+# System user Wings runs game-server processes as — must match
+# `system.username` in config.yml (Pelican's default is "pelican"). Wings
+# tries to create this user on first start and fails with "exit status 9" if
+# the name is already taken (e.g. by the `pelican` GROUP that
+# sage.final.pelican_panel creates on a combined panel+wings host). The role
+# pre-creates it (idempotent) so Wings finds it and skips its own creation.
+pelican_wings_system_user: pelican
+
 # Optional: drop a Wings config.yml fetched from the Pelican Panel onto the
 # host. Provide the file contents (typically read with `lookup('file', ...)`)
 # — when empty the role installs the binary and unit but leaves config.yml to

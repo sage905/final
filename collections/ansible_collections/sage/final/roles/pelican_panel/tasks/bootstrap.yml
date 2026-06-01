@@ -39,10 +39,7 @@
         # which the panel is not served. Poll until it answers (up to 10 min).
         - name: Poll panel HTTP until it answers
           ansible.builtin.command:
-            cmd: >-
-              podman exec pelican-panel sh -c
-              "curl -fsS -o /dev/null http://localhost:{{ pelican_panel_container_port }}/
-               || wget -q -O /dev/null http://localhost:{{ pelican_panel_container_port }}/"
+            cmd: podman exec pelican-panel curl -fsS -o /dev/null http://localhost:{{ pelican_panel_container_port }}/
           register: pelican_panel_health
           retries: 60
           delay: 10

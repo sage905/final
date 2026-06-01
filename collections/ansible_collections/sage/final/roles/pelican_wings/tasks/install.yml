@@ -4,6 +4,26 @@
     name: "{{ pelican_wings_group }}"
     state: present
 
+# Wings runs game-server processes as this system user and creates it on
+# first start — which fails with "exit status 9" when the name already
+# exists (e.g. the `pelican` group from sage.final.pelican_panel). Pre-create
+# it here, idempotently, so Wings finds it and skips its own creation. If a
+# group of this name already exists it is reused (no GID change).
+- name: Ensure the Wings system group exists
+  ansible.builtin.group:
+    name: "{{ pelican_wings_system_user }}"
+    system: true
+    state: present
+
+- name: Ensure the Wings system user exists
+  ansible.builtin.user:
+    name: "{{ pelican_wings_system_user }}"
+    group: "{{ pelican_wings_system_user }}"
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+    state: present
+
 - name: Add users to the pelican_wings group
   ansible.builtin.user:
     name: "{{ item }}"

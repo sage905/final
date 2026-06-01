@@ -35,6 +35,13 @@ argument_specs:
       pelican_wings_log_dir:
         type: path
         default: /var/log/pelican
+      pelican_wings_system_user:
+        type: str
+        default: pelican
+        description: >-
+          System user Wings runs servers as (config.yml system.username).
+          Pre-created by the role so Wings doesn't fail creating it when the
+          name already exists.
       pelican_wings_group:
         type: str
         default: pelican_wings
