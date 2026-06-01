@@ -1,0 +1,35 @@
+---
+# {{ ansible_managed }}
+name: pelican
+
+services:
+  panel:
+    image: {{ pelican_panel_image }}
+    container_name: pelican-panel
+    restart: always
+    environment:
+      # XDG_DATA_HOME points Pelican's persistent state (SQLite database,
+      # generated APP_KEY, settings) at the bind-mounted /pelican-data.
+      XDG_DATA_HOME: /pelican-data
+      APP_ENV: "{{ pelican_panel_app_env }}"
+      APP_DEBUG: "{{ pelican_panel_app_debug | string | lower }}"
+      APP_URL: "https://{{ pelican_panel_fqdn }}"
+      APP_TIMEZONE: "{{ pelican_panel_timezone }}"
+      ADMIN_EMAIL: "{{ pelican_panel_admin_email }}"
+      # Caddy terminates TLS and forwards over the shared network; trust the
+      # proxy so Pelican builds correct https URLs and sees the real client IP.
+      TRUSTED_PROXIES: "*"
+      MAIL_DRIVER: "{{ pelican_panel_mail_driver }}"
+    volumes:
+      - "{{ pelican_panel_data_dir }}/data:/pelican-data"
+      - "{{ pelican_panel_data_dir }}/logs:/var/www/html/storage/logs"
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
+      - "host.docker.internal:host-gateway"
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ pelican_panel_shared_network }}
+    external: true

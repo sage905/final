@@ -112,6 +112,15 @@ flowchart TD
 | **Dashy** | Customisable links/tiles dashboard | `dashy.chemicaloutlaws.com` | Internal only | `/srv/dashy` |
 | **Glance** | Lightweight info dashboard (feeds, widgets) | `glance.chemicaloutlaws.com` | Internal only | `/srv/glance` |
 
+> **Optional alternative — Pelican Panel.** A second game-panel role,
+> `sage.final.pelican_panel`, ships with this project but is **not currently
+> deployed**. [Pelican](https://pelican.dev/) is the modern successor to
+> Pterodactyl and runs as a single, simpler container (SQLite by default — no
+> separate database or Redis). It's a *drop-in replacement* for the Pterodactyl
+> Panel, not an addition: you'd run one or the other, never both on the same
+> host. See Section 10 for how to switch, and the role's README under
+> `collections/ansible_collections/sage/final/roles/pelican_panel/` for details.
+
 ### Behind-the-scenes services
 
 | Component | Purpose | How to reach it |
@@ -409,13 +418,34 @@ ansible-navigator run site.yml --tags hardening
 ```
 
 Available tags: `update`, `hardening`, `wireguard_client`, `cockpit`, `caddy`,
-`pterodactyl`, `wings`, `wordpress`, `dashy`, `glance`, `bracket`, `jellyfin`,
-`portainer`, `healthchecks`, `borg`. Add `--skip-tags update` to skip the OS
-upgrade.
+`pterodactyl`, `pelican`, `wings`, `wordpress`, `dashy`, `glance`, `bracket`,
+`jellyfin`, `portainer`, `healthchecks`, `borg`. Add `--skip-tags update` to
+skip the OS upgrade. (The `pelican` play is dormant — it does nothing unless a
+host is placed in the `pelican_panel` group.)
 
 **Where to change settings:** the `inventory/` folder holds per-server settings
 (web addresses, options, and Vault-encrypted secrets). Adding a public address
 means adding to the `caddy_sites` list there.
+
+### Switching the game panel from Pterodactyl to Pelican
+
+The two panels can't run on the same host, and there's no in-place data
+conversion — switching is a migration, so do it when you can recreate your
+servers in the new panel. Outline:
+
+1. In inventory, move `coserver` from the `pterodactyl_panel` group into a new
+   `pelican_panel` group (leave the `pterodactyl_wings` / `pelican` Wings setup
+   to the panel UI afterward).
+2. Set `pelican_panel_fqdn` and `pelican_panel_admin_email` in
+   `inventory/group_vars/`.
+3. Repoint the panel's `caddy_sites` upstream from `pterodactyl-panel:80` to
+   `pelican-panel:80`.
+4. Run `ansible-navigator run site.yml --tags pelican,caddy`.
+5. Finish setup in a browser at `https://panel.chemicaloutlaws.com/installer`
+   (creates the first admin user; SQLite database by default).
+
+Pterodactyl's data stays untouched under `/srv/pterodactyl`, so you can fall
+back by reversing the inventory and Caddy changes.
 
 > **Important:** if you make changes *by hand* on the server (Sections 6–9) and
 > later re-run a matching playbook tag, the playbook may overwrite your manual

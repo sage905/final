@@ -1,0 +1,55 @@
+---
+# --- Stack location -----------------------------------------------------------
+# Root directory on the host that holds the compose project and the
+# bind-mounted Pelican data/log volumes.
+pelican_panel_data_dir: /srv/pelican
+
+# --- Domain ------------------------------------------------------------------
+# Hostname the panel serves on. Baked into APP_URL. The matching Caddy site
+# block lives in caddy_sites in inventory (upstream: "pelican-panel:80").
+pelican_panel_fqdn: ""
+
+# --- Panel image -------------------------------------------------------------
+# Official Pelican image. `:latest` follows tagged releases; `:main` tracks
+# the development branch. Pin to a release tag for reproducible deploys.
+pelican_panel_image: ghcr.io/pelican-dev/panel:latest
+
+# Port the panel's built-in webserver listens on inside the container. The
+# shared Caddy reverse-proxies to pelican-panel on this port and terminates
+# TLS, so the stack does not publish 80/443 on the host itself.
+pelican_panel_container_port: 80
+
+# --- App settings ------------------------------------------------------------
+pelican_panel_app_env: production
+pelican_panel_app_debug: false
+pelican_panel_timezone: UTC
+
+# Pre-seeds the email field in the web installer. The first admin account is
+# created interactively at https://{{ pelican_panel_fqdn }}/installer on first
+# run (Pelican has no non-interactive bootstrap equivalent to Pterodactyl's
+# `p:user:make` in the documented Docker flow).
+pelican_panel_admin_email: ""
+
+# Mail transport. Defaults to `log` (writes mail to the container log rather
+# than sending). SMTP is best configured in the Pelican admin Settings UI
+# after first-run, which is the upstream-recommended path.
+pelican_panel_mail_driver: log
+
+# --- Shared network (provided by sage.final.caddy) ----------------------------
+pelican_panel_shared_network: web
+
+# --- Container runtime install -----------------------------------------------
+# Set to false on hosts where Podman is already managed elsewhere.
+pelican_panel_install_podman: true
+
+# Rootful: stack runs via system podman. pelican_panel_user owns the files
+# on disk. Pelican's entrypoint chowns its data dir (XDG_DATA_HOME) to the
+# container's web user (www-data) on first start, so after first boot
+# /srv/pelican/data is owned by that UID — by design; manage the panel
+# through its web UI, not by editing the SQLite database on disk.
+pelican_panel_user: root
+
+# Group that owns the panel's files. Admins in pelican_panel_group_members
+# can read/write /srv/pelican top-level files (compose) via SFTP.
+pelican_panel_group: pelican
+pelican_panel_group_members: []

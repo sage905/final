@@ -1,0 +1,61 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy the Pelican Panel as a backend behind shared Caddy.
+    options:
+      pelican_panel_data_dir:
+        type: path
+        default: /srv/pelican
+        description: Host directory holding the compose project and bind-mounted volumes.
+      pelican_panel_fqdn:
+        type: str
+        required: true
+        description: Hostname the panel serves on. Baked into APP_URL.
+      pelican_panel_image:
+        type: str
+        default: ghcr.io/pelican-dev/panel:latest
+        description: Pelican panel image. Pin to a release tag for reproducibility.
+      pelican_panel_container_port:
+        type: int
+        default: 80
+        description: Port the panel's webserver listens on; Caddy proxies to it.
+      pelican_panel_app_env:
+        type: str
+        default: production
+        choices: [production, local]
+      pelican_panel_app_debug:
+        type: bool
+        default: false
+      pelican_panel_timezone:
+        type: str
+        default: UTC
+      pelican_panel_admin_email:
+        type: str
+        required: true
+        description: Pre-seeds the email field in the first-run web installer.
+      pelican_panel_mail_driver:
+        type: str
+        default: log
+        choices: [log, smtp, mail, mailgun, ses]
+        description: >-
+          Mail transport. SMTP is best configured in the Pelican admin
+          Settings UI after first-run (upstream-recommended path).
+      pelican_panel_shared_network:
+        type: str
+        default: web
+      pelican_panel_install_podman:
+        type: bool
+        default: true
+      pelican_panel_user:
+        type: str
+        default: root
+      pelican_panel_group:
+        type: str
+        default: pelican
+      pelican_panel_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to pelican_panel_group. Listed
+          users must already exist on the host.

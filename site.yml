@@ -5,6 +5,7 @@
 #   ansible-navigator run site.yml --tags cockpit
 #   ansible-navigator run site.yml --tags caddy
 #   ansible-navigator run site.yml --tags pterodactyl
+#   ansible-navigator run site.yml --tags pelican
 #   ansible-navigator run site.yml --tags wings
 #   ansible-navigator run site.yml --tags wordpress
 #   ansible-navigator run site.yml --tags dashy
@@ -84,6 +85,17 @@
     - wings
   roles:
     - role: sage.final.pterodactyl_wings
+
+# Alternative to the Pterodactyl Panel play above. Dormant until a host is
+# placed in the `pelican_panel` group; do not run both panels on one host.
+- name: Deploy Pelican Panel
+  hosts: pelican_panel
+  become: true
+  gather_facts: true
+  tags:
+    - pelican
+  roles:
+    - role: sage.final.pelican_panel
 
 - name: Deploy WordPress
   hosts: wordpress

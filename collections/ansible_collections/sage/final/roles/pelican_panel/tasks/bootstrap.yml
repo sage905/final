@@ -1,0 +1,74 @@
+---
+- name: Bring up Pelican
+  block:
+    - name: Ensure the shared Podman network exists
+      ansible.builtin.command:
+        cmd: "podman network create {{ pelican_panel_shared_network }}"
+      register: pelican_panel_network_result
+      changed_when: pelican_panel_network_result.rc == 0
+      failed_when:
+        - pelican_panel_network_result.rc != 0
+        - "'already exists' not in pelican_panel_network_result.stderr"
+
+    # Pull explicitly first so download progress is visible in the play log
+    # rather than hidden inside `compose up`.
+    - name: Pull the Pelican panel image
+      ansible.builtin.command:
+        cmd: podman-compose pull
+        chdir: "{{ pelican_panel_data_dir }}"
+      register: pelican_panel_pull_result
+      changed_when: >-
+        'Trying to pull' in pelican_panel_pull_result.stdout
+        or 'Copying blob' in pelican_panel_pull_result.stderr
+        or 'Writing manifest' in pelican_panel_pull_result.stderr
+      timeout: 1800
+
+    - name: Bring the Pelican stack up
+      ansible.builtin.command:
+        cmd: podman-compose up -d --remove-orphans
+        chdir: "{{ pelican_panel_data_dir }}"
+      register: pelican_panel_compose_result
+      changed_when: "'Creating' in pelican_panel_compose_result.stdout
+                     or 'Recreating' in pelican_panel_compose_result.stdout
+                     or 'Started' in pelican_panel_compose_result.stderr"
+      timeout: 300
+
+    - name: Wait for the panel container to accept HTTP
+      block:
+        # First boot generates APP_KEY and runs database migrations, during
+        # which the panel is not served. Poll until it answers (up to 10 min).
+        - name: Poll panel HTTP until it answers
+          ansible.builtin.command:
+            cmd: >-
+              podman exec pelican-panel sh -c
+              "curl -fsS -o /dev/null http://localhost:{{ pelican_panel_container_port }}/
+               || wget -q -O /dev/null http://localhost:{{ pelican_panel_container_port }}/"
+          register: pelican_panel_health
+          retries: 60
+          delay: 10
+          until: pelican_panel_health.rc == 0
+          changed_when: false
+      rescue:
+        - name: Dump panel container logs for diagnosis
+          ansible.builtin.command:
+            cmd: podman logs --tail 200 pelican-panel
+          register: pelican_panel_logs
+          changed_when: false
+          failed_when: false
+        - name: Show the last 200 lines of panel logs
+          ansible.builtin.debug:
+            msg: "{{ pelican_panel_logs.stdout_lines }}"
+        - name: Fail with original health check error
+          ansible.builtin.fail:
+            msg: >-
+              The panel container is running but never started serving HTTP
+              within 10 minutes. Inspect the logs printed above.
+
+    - name: Show the first-run installer hint
+      ansible.builtin.debug:
+        msg: >-
+          Pelican is up. Finish setup in a browser at
+          https://{{ pelican_panel_fqdn }}/installer — this creates the first
+          admin user and (if you opt out of the default SQLite) configures the
+          database. The email field is pre-filled with
+          '{{ pelican_panel_admin_email }}'.
