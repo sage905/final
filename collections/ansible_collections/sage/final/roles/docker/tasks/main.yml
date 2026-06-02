@@ -20,7 +20,6 @@
     docker_install_compose: false
     docker_service_state: started
     docker_service_enabled: true
-    docker_daemon_options: "{{ docker_daemon_options }}"
 
 # community.docker modules (docker_container_exec, etc.) drive the Docker
 # SDK for Python on the target host.
