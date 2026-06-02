@@ -121,6 +121,10 @@ argument_specs:
         type: list
         elements: str
         default: []
+      hardening_fail2ban_filters:
+        type: list
+        elements: dict
+        default: []
 
       # Updates
       hardening_unattended_upgrades_automatic_reboot:

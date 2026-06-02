@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+[Definition]
+failregex = {{ item.failregex | join('\n            ') }}
+{% if item.ignoreregex | default([]) | length > 0 %}
+ignoreregex = {{ item.ignoreregex | join('\n              ') }}
+{% endif %}

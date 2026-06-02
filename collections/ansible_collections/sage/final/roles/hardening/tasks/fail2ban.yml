@@ -16,6 +16,18 @@
   changed_when: false
   failed_when: "'install ok installed' not in hardening_fail2ban_dpkg.stdout"
 
+- name: Write custom fail2ban filters
+  ansible.builtin.template:
+    src: filter.conf.j2
+    dest: "/etc/fail2ban/filter.d/{{ item.name }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ hardening_fail2ban_filters }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Restart fail2ban
+
 - name: Write fail2ban jail.local
   ansible.builtin.template:
     src: jail.local.j2

@@ -79,6 +79,29 @@ hardening_fail2ban_extra_ignoreip: []
 # for enabling cockpit, nginx, caddy filters etc. once you have logs flowing.
 hardening_fail2ban_extra_jails: []
 
+# Custom filter files dropped into /etc/fail2ban/filter.d/<name>.conf, for logs
+# fail2ban ships no filter for (e.g. Pelican Wings SFTP). Each entry:
+#   name:        filter name, referenced by `filter = <name>` in a jail
+#   failregex:   list of regexes; <HOST> captures the offending IP
+#   ignoreregex: (optional) list of regexes whose matches are never counted
+# Pair each filter with a jail stanza in hardening_fail2ban_extra_jails. Wings
+# logs to journald as wings.service, so a systemd-backend jail bans scanners and
+# repeated auth failures hitting SFTP on 2022 without touching a log file:
+#   hardening_fail2ban_filters:
+#     - name: wings-sftp
+#       failregex:
+#         - '^.*sftp:\s+failed\b.*\bip=<HOST>:\d+\s*$'
+#   hardening_fail2ban_extra_jails:
+#     - |
+#       [wings-sftp]
+#       enabled      = true
+#       backend      = systemd
+#       filter       = wings-sftp
+#       journalmatch = _SYSTEMD_UNIT=wings.service
+#       port         = 2022
+#       maxretry     = 3
+hardening_fail2ban_filters: []
+
 # --- Unattended upgrades ------------------------------------------------------
 # When true, installs unattended-upgrades and enables the default Ubuntu
 # security-updates schedule. Does not enable automatic reboots.
