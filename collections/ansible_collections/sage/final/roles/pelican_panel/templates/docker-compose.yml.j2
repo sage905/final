@@ -11,7 +11,7 @@ services:
     # {{ pelican_panel_container_port }} directly. Linux blocks non-root binds below 1024, and the
     # image's caddy binary carries no file capabilities, so lower the
     # unprivileged-port threshold inside this container's network namespace.
-    # List form (KEY=VALUE) — podman-compose 1.0.x mishandles the map form.
+    # List form (KEY=VALUE); the map form also works under Compose v2.
     sysctls:
       - "net.ipv4.ip_unprivileged_port_start={{ pelican_panel_container_port }}"
     environment:
@@ -31,7 +31,7 @@ services:
       # Comma-separated CIDRs the in-container Caddy trusts as upstream
       # proxies (NOT a Laravel `*` — Pelican feeds this into Caddy's
       # `trusted_proxies static`, which needs real CIDRs). Covers the private
-      # range the shared `web` podman network is assigned from.
+      # range the shared `web` Docker network is assigned from.
       TRUSTED_PROXIES: "{{ pelican_panel_trusted_proxies }}"
       MAIL_DRIVER: "{{ pelican_panel_mail_driver }}"
     volumes:

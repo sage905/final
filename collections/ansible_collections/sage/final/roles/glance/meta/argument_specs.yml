@@ -18,9 +18,9 @@ argument_specs:
       glance_shared_network:
         type: str
         default: web
-      glance_install_podman:
+      glance_install_docker:
         type: bool
-        default: true
+        default: false
       glance_user:
         type: str
         default: containers

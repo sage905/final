@@ -1,7 +1,7 @@
 ---
-- name: Ensure the shared Podman network exists
+- name: Ensure the shared Docker network exists
   ansible.builtin.command:
-    cmd: "podman network create {{ healthchecks_shared_network }}"
+    cmd: "docker network create {{ healthchecks_shared_network }}"
   register: healthchecks_network_result
   changed_when: healthchecks_network_result.rc == 0
   failed_when:
@@ -10,7 +10,7 @@
 
 - name: Bring up the Healthchecks stack
   ansible.builtin.command:
-    cmd: podman-compose up -d --remove-orphans
+    cmd: docker compose up -d --remove-orphans
     chdir: "{{ healthchecks_data_dir }}"
   register: healthchecks_compose_result
   changed_when: "'Creating' in healthchecks_compose_result.stdout

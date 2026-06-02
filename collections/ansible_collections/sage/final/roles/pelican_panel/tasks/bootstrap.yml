@@ -1,9 +1,9 @@
 ---
 - name: Bring up Pelican
   block:
-    - name: Ensure the shared Podman network exists
+    - name: Ensure the shared Docker network exists
       ansible.builtin.command:
-        cmd: "podman network create {{ pelican_panel_shared_network }}"
+        cmd: "docker network create {{ pelican_panel_shared_network }}"
       register: pelican_panel_network_result
       changed_when: pelican_panel_network_result.rc == 0
       failed_when:
@@ -14,7 +14,7 @@
     # rather than hidden inside `compose up`.
     - name: Pull the Pelican panel image
       ansible.builtin.command:
-        cmd: podman-compose pull
+        cmd: docker compose pull
         chdir: "{{ pelican_panel_data_dir }}"
       register: pelican_panel_pull_result
       changed_when: >-
@@ -25,7 +25,7 @@
 
     - name: Bring the Pelican stack up
       ansible.builtin.command:
-        cmd: podman-compose up -d --remove-orphans
+        cmd: docker compose up -d --remove-orphans
         chdir: "{{ pelican_panel_data_dir }}"
       register: pelican_panel_compose_result
       changed_when: "'Creating' in pelican_panel_compose_result.stdout
@@ -39,7 +39,7 @@
         # which the panel is not served. Poll until it answers (up to 10 min).
         - name: Poll panel HTTP until it answers
           ansible.builtin.command:
-            cmd: podman exec pelican-panel curl -fsS -o /dev/null http://localhost:{{ pelican_panel_container_port }}/
+            cmd: docker exec pelican-panel curl -fsS -o /dev/null http://localhost:{{ pelican_panel_container_port }}/
           register: pelican_panel_health
           retries: 60
           delay: 10
@@ -48,7 +48,7 @@
       rescue:
         - name: Dump panel container logs for diagnosis
           ansible.builtin.command:
-            cmd: podman logs --tail 200 pelican-panel
+            cmd: docker logs --tail 200 pelican-panel
           register: pelican_panel_logs
           changed_when: false
           failed_when: false

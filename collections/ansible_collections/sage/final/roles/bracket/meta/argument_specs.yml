@@ -31,9 +31,9 @@ argument_specs:
       bracket_shared_network:
         type: str
         default: web
-      bracket_install_podman:
+      bracket_install_docker:
         type: bool
-        default: true
+        default: false
       bracket_user:
         type: str
         default: containers

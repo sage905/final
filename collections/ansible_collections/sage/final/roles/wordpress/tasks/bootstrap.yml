@@ -1,7 +1,7 @@
 ---
-- name: Ensure the shared Podman network exists
+- name: Ensure the shared Docker network exists
   ansible.builtin.command:
-    cmd: "podman network create {{ wordpress_shared_network }}"
+    cmd: "docker network create {{ wordpress_shared_network }}"
   register: wordpress_network_result
   changed_when: wordpress_network_result.rc == 0
   failed_when:
@@ -10,7 +10,7 @@
 
 - name: Bring up the WordPress stack
   ansible.builtin.command:
-    cmd: podman-compose up -d --remove-orphans
+    cmd: docker compose up -d --remove-orphans
     chdir: "{{ wordpress_data_dir }}"
   register: wordpress_compose_result
   changed_when: "'Creating' in wordpress_compose_result.stdout

@@ -19,10 +19,10 @@ argument_specs:
       caddy_shared_network:
         type: str
         default: web
-        description: External Podman network all backend roles attach to.
-      caddy_install_podman:
+        description: External Docker network all backend roles attach to.
+      caddy_install_docker:
         type: bool
-        default: true
+        default: false
       caddy_user:
         type: str
         default: containers

@@ -1,0 +1,10 @@
+---
+# Extra dockerd daemon.json options merged in by geerlingguy.docker. Empty
+# by default; override to set log rotation, default-address-pools, etc.
+# Example:
+#   docker_daemon_options:
+#     log-driver: json-file
+#     log-opts:
+#       max-size: "10m"
+#       max-file: "3"
+docker_daemon_options: {}

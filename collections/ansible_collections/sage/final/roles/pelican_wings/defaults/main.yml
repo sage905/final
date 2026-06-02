@@ -64,8 +64,7 @@ pelican_wings_config_yaml: ""
 pelican_wings_enable_swap_accounting: true
 
 # --- Container runtime install ------------------------------------------------
-# Set to false on hosts where Podman is already managed elsewhere. Wings is
-# pointed at Podman's Docker-compatible socket via DOCKER_HOST in the unit.
-# Upstream Pelican Wings targets Docker; this works because podman.socket
-# emulates the Docker API, but treat as best-effort.
-pelican_wings_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml (Wings
+# then uses the default /var/run/docker.sock). Leave false; set true only to
+# install Docker from this role on a standalone run.
+pelican_wings_install_docker: false

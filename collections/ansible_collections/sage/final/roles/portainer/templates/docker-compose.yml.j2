@@ -7,13 +7,13 @@ services:
     image: {{ portainer_image }}
     container_name: portainer
     restart: always
-    # Portainer talks to the system podman socket via its Docker-compat
-    # endpoint. Mounted into the container at the path Portainer expects
-    # for a Docker socket. The dependencies task in this role enables
-    # the system podman.socket so this file exists at boot.
+    # Portainer talks to the host Docker socket, mounted into the
+    # container at the path Portainer expects. The Docker engine is
+    # installed by the shared sage.final.docker role, so the socket
+    # exists at boot.
     volumes:
       - "{{ portainer_data_dir }}/data:/data"
-      - "/run/podman/podman.sock:/var/run/docker.sock"
+      - "/var/run/docker.sock:/var/run/docker.sock"
     # `--http-enabled` tells Portainer to expose its UI on HTTP (Caddy
     # terminates TLS for us). Without it, Portainer would also try to
     # listen on HTTPS:9443 with its own self-signed cert.

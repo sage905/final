@@ -17,9 +17,11 @@ bracket_db_password: ""
 # Shared infra provided by sage.final.caddy.
 bracket_shared_network: web
 
-bracket_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+bracket_install_docker: false
 
-# Rootful: stack runs via system podman. bracket_user owns the files
+# Rootful: stack runs via system Docker. bracket_user owns the files
 # on disk. Postgres inside its container chowns its own data dir on
 # first start (to postgres uid 70 or 999 depending on image), so admins
 # can't usefully SFTP-edit /srv/bracket/postgres; for top-level config

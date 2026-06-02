@@ -7,40 +7,10 @@
       sage.final.pelican_wings currently supports Ubuntu only. Detected
       distribution: {{ ansible_facts['distribution'] | default('unknown') }}.
 
-- name: Install Podman and expose its Docker-compatible socket
-  when: pelican_wings_install_podman
-  block:
-    - name: Install podman
-      ansible.builtin.apt:
-        name:
-          - podman
-          - uidmap
-        state: present
-        update_cache: true
-        cache_valid_time: 3600
-
-    - name: Enable the Podman Docker-compatible API socket
-      ansible.builtin.systemd:
-        name: podman.socket
-        enabled: true
-        state: started
-
-    - name: Ensure /etc/containers/registries.conf.d exists
-      ansible.builtin.file:
-        path: /etc/containers/registries.conf.d
-        state: directory
-        owner: root
-        group: root
-        mode: "0755"
-
-    - name: Configure Podman unqualified-search registries
-      ansible.builtin.copy:
-        dest: /etc/containers/registries.conf.d/00-shortnames.conf
-        owner: root
-        group: root
-        mode: "0644"
-        content: |
-          unqualified-search-registries = ["docker.io", "ghcr.io", "quay.io"]
+- name: Install the Docker engine and Compose plugin
+  ansible.builtin.include_role:
+    name: sage.final.docker
+  when: pelican_wings_install_docker
 
 - name: Enable cgroup swap accounting in GRUB
   when: pelican_wings_enable_swap_accounting

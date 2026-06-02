@@ -1,12 +1,12 @@
 ---
 - name: Recreate caddy stack
   ansible.builtin.command:
-    cmd: podman-compose up -d --force-recreate
+    cmd: docker compose up -d --force-recreate
     chdir: "{{ caddy_data_dir }}"
   changed_when: true
 
 - name: Reload caddy
-  containers.podman.podman_container_exec:
-    name: "{{ caddy_container }}"
+  community.docker.docker_container_exec:
+    container: "{{ caddy_container }}"
     command: caddy reload --config /etc/caddy/Caddyfile
   failed_when: false

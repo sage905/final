@@ -1,6 +1,6 @@
 ---
 - name: Recreate wordpress stack
   ansible.builtin.command:
-    cmd: podman-compose up -d --force-recreate
+    cmd: docker compose up -d --force-recreate
     chdir: "{{ wordpress_data_dir }}"
   changed_when: true

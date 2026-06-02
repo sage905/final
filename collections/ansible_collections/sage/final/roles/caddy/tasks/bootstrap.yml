@@ -1,7 +1,7 @@
 ---
-- name: Ensure the shared Podman network exists
+- name: Ensure the shared Docker network exists
   ansible.builtin.command:
-    cmd: "podman network create {{ caddy_shared_network }}"
+    cmd: "docker network create {{ caddy_shared_network }}"
   register: caddy_network_result
   changed_when: caddy_network_result.rc == 0
   failed_when:
@@ -10,7 +10,7 @@
 
 - name: Bring the Caddy stack up
   ansible.builtin.command:
-    cmd: podman-compose up -d --remove-orphans
+    cmd: docker compose up -d --remove-orphans
     chdir: "{{ caddy_data_dir }}"
   register: caddy_compose_result
   changed_when: "'Creating' in caddy_compose_result.stdout

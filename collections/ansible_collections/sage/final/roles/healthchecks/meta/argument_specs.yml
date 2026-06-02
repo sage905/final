@@ -46,9 +46,9 @@ argument_specs:
       healthchecks_shared_network:
         type: str
         default: web
-      healthchecks_install_podman:
+      healthchecks_install_docker:
         type: bool
-        default: true
+        default: false
       healthchecks_user:
         type: str
         default: root

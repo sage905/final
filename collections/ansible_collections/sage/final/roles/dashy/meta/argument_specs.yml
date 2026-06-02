@@ -18,9 +18,9 @@ argument_specs:
       dashy_shared_network:
         type: str
         default: web
-      dashy_install_podman:
+      dashy_install_docker:
         type: bool
-        default: true
+        default: false
       dashy_user:
         type: str
         default: containers

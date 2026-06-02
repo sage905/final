@@ -10,9 +10,11 @@ glance_seed_config: true
 # Shared infra provided by sage.final.caddy.
 glance_shared_network: web
 
-glance_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+glance_install_docker: false
 
-# Rootful: stack runs via system podman. glance_user owns the files on
+# Rootful: stack runs via system Docker. glance_user owns the files on
 # disk. The glance image runs as root inside, so root ownership on the
 # host matches container writes (no `:U` needed).
 glance_user: root

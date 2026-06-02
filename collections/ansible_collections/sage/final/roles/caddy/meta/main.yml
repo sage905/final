@@ -15,5 +15,5 @@ galaxy_info:
     - caddy
     - proxy
     - tls
-    - podman
+    - docker
 dependencies: []

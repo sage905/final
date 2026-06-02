@@ -14,5 +14,5 @@ galaxy_info:
   galaxy_tags:
     - dashy
     - dashboard
-    - podman
+    - docker
 dependencies: []

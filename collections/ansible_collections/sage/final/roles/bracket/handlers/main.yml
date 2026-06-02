@@ -1,6 +1,6 @@
 ---
 - name: Recreate bracket stack
   ansible.builtin.command:
-    cmd: podman-compose up -d --force-recreate
+    cmd: docker compose up -d --force-recreate
     chdir: "{{ bracket_data_dir }}"
   changed_when: true

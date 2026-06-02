@@ -6,13 +6,15 @@ caddy_container: caddy
 # Email Caddy uses to register with the ACME provider. Required.
 caddy_admin_email: ""
 
-# External Podman network this role creates and that all backend roles join
+# External Docker network this role creates and that all backend roles join
 # (sage.final.pterodactyl_panel, .wordpress, .dashy, .glance, .bracket, .jellyfin).
 caddy_shared_network: web
 
-caddy_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+caddy_install_docker: false
 
-# Rootful: stacks run via system podman. caddy_user owns the files on
+# Rootful: stacks run via system Docker. caddy_user owns the files on
 # disk. The official caddy:2-alpine image runs as root inside the
 # container, so root ownership on the host matches what the container
 # writes (no UID translation, no `:U` mount flag).

@@ -54,6 +54,6 @@ argument_specs:
         type: bool
         default: true
         description: Adds swapaccount=1 to GRUB; reboot required for it to apply.
-      pterodactyl_wings_install_podman:
+      pterodactyl_wings_install_docker:
         type: bool
-        default: true
+        default: false

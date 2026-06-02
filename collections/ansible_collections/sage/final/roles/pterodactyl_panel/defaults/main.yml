@@ -58,10 +58,11 @@ pterodactyl_panel_admin_first_name: Panel
 pterodactyl_panel_admin_last_name: Admin
 
 # --- Container runtime install -------------------------------------------------
-# Set to false on hosts where Podman is already managed elsewhere.
-pterodactyl_panel_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+pterodactyl_panel_install_docker: false
 
-# Rootful: stack runs via system podman. pterodactyl_panel_user owns
+# Rootful: stack runs via system Docker. pterodactyl_panel_user owns
 # the files on disk. The panel image's supervisord starts as root and
 # the runtime DB (mariadb) chowns its data dir to mysql (UID 999) on
 # first start.

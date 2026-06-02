@@ -74,9 +74,9 @@ argument_specs:
       pterodactyl_panel_admin_last_name:
         type: str
         default: Admin
-      pterodactyl_panel_install_podman:
+      pterodactyl_panel_install_docker:
         type: bool
-        default: true
+        default: false
       pterodactyl_panel_user:
         type: str
         default: containers

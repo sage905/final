@@ -1,7 +1,7 @@
 ---
-- name: Ensure the shared Podman network exists
+- name: Ensure the shared Docker network exists
   ansible.builtin.command:
-    cmd: "podman network create {{ bracket_shared_network }}"
+    cmd: "docker network create {{ bracket_shared_network }}"
   register: bracket_network_result
   changed_when: bracket_network_result.rc == 0
   failed_when:
@@ -10,7 +10,7 @@
 
 - name: Bring up the Bracket stack
   ansible.builtin.command:
-    cmd: podman-compose up -d --remove-orphans
+    cmd: docker compose up -d --remove-orphans
     chdir: "{{ bracket_data_dir }}"
   register: bracket_compose_result
   changed_when: "'Creating' in bracket_compose_result.stdout

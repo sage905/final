@@ -11,14 +11,16 @@ wordpress_db_user: wordpress
 wordpress_db_password: ""
 wordpress_db_root_password: ""
 
-# Name of the external Podman network this stack joins. The caddy role
+# Name of the external Docker network this stack joins. The caddy role
 # creates it; this role attaches as external: true.
 wordpress_shared_network: web
 
 # --- Container runtime install ------------------------------------------------
-wordpress_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+wordpress_install_docker: false
 
-# Rootful: stack runs via system podman. wordpress_user owns the files
+# Rootful: stack runs via system Docker. wordpress_user owns the files
 # on disk. Apache inside the wordpress image drops to www-data (UID 33)
 # and will chown /var/www/html accordingly on first start, so after that
 # /srv/wordpress/wordpress is owned by host UID 33 (www-data on Ubuntu).

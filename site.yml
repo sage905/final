@@ -19,6 +19,11 @@
 #   ansible-navigator run site.yml --tags hardening
 #   ansible-navigator run site.yml --tags wireguard_client
 # Skip the apt upgrade with --skip-tags update.
+#
+# Container runtime: this collection runs all stacks on rootful Docker (engine
+# installed by sage.final.docker, wrapping geerlingguy.docker). Migrating a host
+# that still runs Podman? Use migrate_podman_to_docker.yml — see
+# docs/Podman-to-Docker-Migration.md.
 - name: Bring all packages up to date
   hosts: all
   become: true
@@ -50,6 +55,31 @@
     - wireguard_client
   roles:
     - role: sage.final.wireguard_client
+
+# Install the Docker engine once per host, up front, so the application plays
+# below don't each re-run the install. Container roles default
+# <role>_install_docker: false and rely on this play; flip a role's flag to
+# true only when running it standalone (outside site.yml).
+- name: Install the Docker engine on all container hosts
+  hosts:
+    - caddy
+    - dashy
+    - glance
+    - bracket
+    - jellyfin
+    - healthchecks
+    - portainer
+    - pelican_panel
+    - pterodactyl_panel
+    - wordpress
+    - pelican_wings
+    - pterodactyl_wings
+  become: true
+  gather_facts: true
+  tags:
+    - docker
+  roles:
+    - role: sage.final.docker
 
 - name: Install Cockpit
   hosts: coserver

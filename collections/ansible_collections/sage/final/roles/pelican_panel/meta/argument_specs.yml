@@ -50,9 +50,9 @@ argument_specs:
           Comma-separated CIDRs the in-container Caddy trusts as proxies.
           Must be valid CIDRs (fed to Caddy's trusted_proxies static), not
           Laravel's `*`.
-      pelican_panel_install_podman:
+      pelican_panel_install_docker:
         type: bool
-        default: true
+        default: false
       pelican_panel_user:
         type: str
         default: root

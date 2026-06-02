@@ -9,10 +9,12 @@ portainer_container_port: 9000
 # Shared infra provided by sage.final.caddy.
 portainer_shared_network: web
 
-portainer_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+portainer_install_docker: false
 
-# Rootful: stack runs via system podman. Portainer mounts the system
-# podman socket (/run/podman/podman.sock) and sees every container the
+# Rootful: stack runs via system Docker. Portainer mounts the system
+# Docker socket (/var/run/docker.sock) and sees every container the
 # other roles deployed.
 portainer_user: root
 

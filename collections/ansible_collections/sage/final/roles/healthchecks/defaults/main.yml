@@ -40,9 +40,11 @@ healthchecks_default_from_email: ""
 
 # --- Shared infra ------------------------------------------------------------
 healthchecks_shared_network: web
-healthchecks_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+healthchecks_install_docker: false
 
-# Rootful: stack runs via system podman. healthchecks_user owns files
+# Rootful: stack runs via system Docker. healthchecks_user owns files
 # on the host. The healthchecks image is an exception within this
 # collection: it sets `USER app` (UID 1000) in its Dockerfile and the
 # entrypoint does not chown its data dir, so the compose mount uses the

@@ -15,9 +15,9 @@ argument_specs:
       portainer_shared_network:
         type: str
         default: web
-      portainer_install_podman:
+      portainer_install_docker:
         type: bool
-        default: true
+        default: false
       portainer_user:
         type: str
         default: containers

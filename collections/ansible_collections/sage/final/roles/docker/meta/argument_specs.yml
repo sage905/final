@@ -1,0 +1,11 @@
+---
+argument_specs:
+  main:
+    short_description: Install the rootful Docker Engine and Compose plugin.
+    options:
+      docker_daemon_options:
+        type: dict
+        default: {}
+        description: >-
+          Extra dockerd options merged into daemon.json by
+          geerlingguy.docker (e.g. log rotation, default-address-pools).

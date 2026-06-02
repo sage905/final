@@ -3,7 +3,7 @@ galaxy_info:
   role_name: pelican_panel
   namespace: sage
   author: Sage
-  description: Run the Pelican Panel as a Podman Compose stack behind shared Caddy.
+  description: Run the Pelican Panel as a Docker Compose stack behind shared Caddy.
   license: BSD-2-Clause
   min_ansible_version: "2.17"
   platforms:
@@ -13,7 +13,7 @@ galaxy_info:
         - noble
   galaxy_tags:
     - pelican
-    - podman
+    - docker
     - compose
     - gameserver
     - panel

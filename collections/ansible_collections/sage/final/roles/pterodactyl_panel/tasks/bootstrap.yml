@@ -1,9 +1,9 @@
 ---
 - name: Bring up Pterodactyl
   block:
-    - name: Ensure the shared Podman network exists
+    - name: Ensure the shared Docker network exists
       ansible.builtin.command:
-        cmd: "podman network create {{ pterodactyl_panel_shared_network }}"
+        cmd: "docker network create {{ pterodactyl_panel_shared_network }}"
       register: pterodactyl_panel_network_result
       changed_when: pterodactyl_panel_network_result.rc == 0
       failed_when:
@@ -16,7 +16,7 @@
     # play log and a true hang surfaces against the timeout.
     - name: Pull images for the Pterodactyl stack
       ansible.builtin.command:
-        cmd: podman-compose pull
+        cmd: docker compose pull
         chdir: "{{ pterodactyl_panel_data_dir }}"
       register: pterodactyl_panel_pull_result
       changed_when: >-
@@ -27,7 +27,7 @@
 
     - name: Bring the Pterodactyl stack up
       ansible.builtin.command:
-        cmd: podman-compose up -d --remove-orphans
+        cmd: docker compose up -d --remove-orphans
         chdir: "{{ pterodactyl_panel_data_dir }}"
       register: pterodactyl_panel_compose_result
       changed_when: "'Creating' in pterodactyl_panel_compose_result.stdout
@@ -42,7 +42,7 @@
         # several minutes on a small VPS.
         - name: Poll panel HTTP until it answers
           ansible.builtin.command:
-            cmd: podman exec pterodactyl-panel curl -fsS -o /dev/null http://localhost:80/
+            cmd: docker exec pterodactyl-panel curl -fsS -o /dev/null http://localhost:80/
           register: pterodactyl_panel_health
           retries: 60
           delay: 10
@@ -51,7 +51,7 @@
       rescue:
         - name: Dump panel container logs for diagnosis
           ansible.builtin.command:
-            cmd: podman logs --tail 200 pterodactyl-panel
+            cmd: docker logs --tail 200 pterodactyl-panel
           register: pterodactyl_panel_logs
           changed_when: false
           failed_when: false
@@ -70,8 +70,8 @@
         - pterodactyl_panel_admin_password | length > 0
       block:
         - name: Look up the bootstrap admin user
-          containers.podman.podman_container_exec:
-            name: pterodactyl-panel
+          community.docker.docker_container_exec:
+            container: pterodactyl-panel
             command: >-
               php artisan tinker --execute=
               "echo \Pterodactyl\Models\User::where('username','{{ pterodactyl_panel_admin_username }}')->exists() ? 'yes' : 'no';"
@@ -80,8 +80,8 @@
           failed_when: false
 
         - name: Create the bootstrap admin user
-          containers.podman.podman_container_exec:
-            name: pterodactyl-panel
+          community.docker.docker_container_exec:
+            container: pterodactyl-panel
             command: >-
               php artisan p:user:make
               --email={{ pterodactyl_panel_admin_email }}

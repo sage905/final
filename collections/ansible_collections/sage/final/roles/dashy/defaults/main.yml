@@ -10,9 +10,11 @@ dashy_seed_config: true
 # Shared infra provided by sage.final.caddy.
 dashy_shared_network: web
 
-dashy_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+dashy_install_docker: false
 
-# Rootful: stack runs via system podman. dashy_user owns the files on
+# Rootful: stack runs via system Docker. dashy_user owns the files on
 # disk. The Dashy v4 image runs as the non-root "node" user (UID 1000),
 # so it cannot rely on owner access; instead the container joins the
 # dashy group (via group_add in the compose template) and reaches the

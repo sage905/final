@@ -15,9 +15,11 @@ jellyfin_publish_dlna_port: false
 # Shared infra provided by sage.final.caddy.
 jellyfin_shared_network: web
 
-jellyfin_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+jellyfin_install_docker: false
 
-# Rootful: stack runs via system podman. jellyfin_user owns the files
+# Rootful: stack runs via system Docker. jellyfin_user owns the files
 # on disk. The jellyfin image runs as root inside, so root ownership on
 # the host matches container writes (no `:U` needed).
 jellyfin_user: root

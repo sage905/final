@@ -7,38 +7,7 @@
       sage.final.glance currently supports Ubuntu only. Detected
       distribution: {{ ansible_facts['distribution'] | default('unknown') }}.
 
-- name: Install Podman and podman-compose
-  when: glance_install_podman
-  block:
-    - name: Install podman and podman-compose
-      ansible.builtin.apt:
-        name:
-          - podman
-          - podman-compose
-          - uidmap
-        state: present
-        update_cache: true
-        cache_valid_time: 3600
-
-    - name: Enable the Podman API socket
-      ansible.builtin.systemd:
-        name: podman.socket
-        enabled: true
-        state: started
-    - name: Ensure /etc/containers/registries.conf.d exists
-      ansible.builtin.file:
-        path: /etc/containers/registries.conf.d
-        state: directory
-        owner: root
-        group: root
-        mode: "0755"
-
-    - name: Configure Podman unqualified-search registries
-      ansible.builtin.copy:
-        dest: /etc/containers/registries.conf.d/00-shortnames.conf
-        owner: root
-        group: root
-        mode: "0644"
-        content: |
-          unqualified-search-registries = ["docker.io", "ghcr.io", "quay.io"]
-
+- name: Install the Docker engine and Compose plugin
+  ansible.builtin.include_role:
+    name: sage.final.docker
+  when: glance_install_docker

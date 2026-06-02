@@ -14,5 +14,5 @@ galaxy_info:
   galaxy_tags:
     - glance
     - dashboard
-    - podman
+    - docker
 dependencies: []

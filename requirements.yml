@@ -1,0 +1,17 @@
+---
+# Install with:
+#   ansible-galaxy install -r requirements.yml
+# Roles land in ./roles (see roles_path in ansible.cfg); collections are
+# vendored under ./collections. For AAP, point the project at this file.
+
+roles:
+  # Rootful Docker Engine + Compose v2 plugin install, wrapped by
+  # sage.final.docker. Pin to a tag for reproducible builds.
+  - name: geerlingguy.docker
+    version: "7.4.1"
+
+collections:
+  - name: community.docker
+    version: ">=5.0.0"
+  - name: community.general
+  - name: ansible.posix

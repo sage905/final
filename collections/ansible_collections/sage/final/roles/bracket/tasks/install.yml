@@ -93,13 +93,13 @@
 
 - name: Pull the Bracket image
   ansible.builtin.command:
-    cmd: "podman pull {{ bracket_image }}"
+    cmd: "docker pull {{ bracket_image }}"
   register: bracket_pull
   changed_when: "'Storing signatures' in bracket_pull.stdout"
 
 - name: Get the Bracket image ID
   ansible.builtin.command:
-    cmd: "podman images --quiet --no-trunc {{ bracket_image }}"
+    cmd: "docker images --quiet --no-trunc {{ bracket_image }}"
   register: bracket_image_id
   changed_when: false
 
@@ -118,7 +118,7 @@
   block:
     - name: Remove any stale extraction container
       ansible.builtin.command:
-        cmd: podman rm -f bracket-extract
+        cmd: docker rm -f bracket-extract
       changed_when: false
       failed_when: false
 
@@ -135,17 +135,17 @@
 
     - name: Create a transient container to extract the assets
       ansible.builtin.command:
-        cmd: "podman create --name bracket-extract {{ bracket_image }}"
+        cmd: "docker create --name bracket-extract {{ bracket_image }}"
       changed_when: true
 
     - name: Copy frontend-dist out of the image
       ansible.builtin.command:
-        cmd: "podman cp bracket-extract:/app/frontend-dist/. {{ bracket_data_dir }}/frontend-dist/"
+        cmd: "docker cp bracket-extract:/app/frontend-dist/. {{ bracket_data_dir }}/frontend-dist/"
       changed_when: true
 
     - name: Remove the transient container
       ansible.builtin.command:
-        cmd: "podman rm bracket-extract"
+        cmd: "docker rm bracket-extract"
       changed_when: true
 
     - name: Rewrite the baked API origin to the public FQDN

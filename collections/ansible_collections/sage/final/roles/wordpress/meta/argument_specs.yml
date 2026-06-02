@@ -26,10 +26,10 @@ argument_specs:
       wordpress_shared_network:
         type: str
         default: web
-        description: External Podman network shared with the caddy role.
-      wordpress_install_podman:
+        description: External Docker network shared with the caddy role.
+      wordpress_install_docker:
         type: bool
-        default: true
+        default: false
       wordpress_user:
         type: str
         default: containers

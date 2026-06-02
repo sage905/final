@@ -1,0 +1,82 @@
+---
+# One-shot migration from rootful Podman to rootful Docker for this collection.
+#
+#   ansible-navigator run migrate_podman_to_docker.yml --eei ee-demo \
+#     -i inventory/hosts.yml
+#
+# What it does:
+#   1. Gracefully tears down the running Podman footprint on every container
+#      host: stops Wings, stops + removes all Podman containers, then stops
+#      and DISABLES podman.socket. Podman packages and /var/lib/containers are
+#      LEFT IN PLACE, so the change is reversible (re-enable podman.socket to
+#      roll back).
+#   2. Hands off to site.yml, which installs the Docker engine (geerlingguy.
+#      docker via sage.final.docker) and brings every stack back up on Docker.
+#      All app data is bind-mounted on the host, so nothing is lost.
+#
+# Notes:
+#   - Skip site.yml's apt dist-upgrade with --skip-tags update.
+#   - Re-runnable: every step is guarded and idempotent.
+#   - Run the teardown alone with --tags migrate_podman_to_docker if you want to
+#     converge the Docker side separately (e.g. ansible-navigator run site.yml).
+
+- name: Tear down the Podman runtime before the Docker cutover
+  hosts: all
+  become: true
+  gather_facts: true
+  tags:
+    - migrate_podman_to_docker
+  tasks:
+    - name: Check whether Podman is installed on this host
+      ansible.builtin.shell:
+        cmd: command -v podman || true
+      register: podman_to_docker_bin
+      changed_when: false
+
+    - name: Tear down Podman (only on hosts that have it)
+      when: "'podman' in podman_to_docker_bin.stdout"
+      block:
+        - name: Stop the Wings daemon if present
+          ansible.builtin.systemd:
+            name: wings
+            state: stopped
+          failed_when: false
+
+        - name: Stop all Podman containers
+          ansible.builtin.command:
+            cmd: podman stop --all --time 30
+          register: podman_to_docker_stop
+          changed_when: podman_to_docker_stop.stdout | trim | length > 0
+          failed_when: false
+
+        - name: Remove all Podman containers (incl. game-server containers)
+          ansible.builtin.command:
+            cmd: podman rm --all --force
+          register: podman_to_docker_rm
+          changed_when: podman_to_docker_rm.stdout | trim | length > 0
+          failed_when: false
+
+        - name: Stop and disable the system podman.socket
+          ansible.builtin.systemd:
+            name: podman.socket
+            state: stopped
+            enabled: false
+          failed_when: false
+
+        - name: Stop and disable the podman API service
+          ansible.builtin.systemd:
+            name: podman
+            state: stopped
+            enabled: false
+          failed_when: false
+
+        - name: Report teardown result
+          ansible.builtin.debug:
+            msg: >-
+              Podman torn down (packages and /var/lib/containers left in place
+              for rollback). Docker will be installed and the stacks recreated
+              by site.yml. App data is bind-mounted and untouched.
+
+# Converge every host onto Docker: installs the engine and recreates stacks.
+- name: Converge every host onto Docker
+  ansible.builtin.import_playbook: site.yml

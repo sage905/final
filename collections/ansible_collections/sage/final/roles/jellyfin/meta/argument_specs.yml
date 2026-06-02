@@ -26,9 +26,9 @@ argument_specs:
       jellyfin_shared_network:
         type: str
         default: web
-      jellyfin_install_podman:
+      jellyfin_install_docker:
         type: bool
-        default: true
+        default: false
       jellyfin_user:
         type: str
         default: containers

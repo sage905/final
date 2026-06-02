@@ -1,0 +1,32 @@
+---
+- name: Assert that the target host is Ubuntu
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Ubuntu'
+    fail_msg: >-
+      sage.final.docker currently supports Ubuntu only. Detected
+      distribution: {{ ansible_facts['distribution'] | default('unknown') }}.
+
+# Engine + CLI + Compose v2 plugin from the upstream Docker apt repo.
+# Delegated to geerlingguy.docker (the de-facto community role) so we don't
+# re-implement repo/GPG/package handling here. Pulled in via requirements.yml.
+- name: Install Docker Engine and the Compose plugin
+  ansible.builtin.include_role:
+    name: geerlingguy.docker
+  vars:
+    docker_edition: ce
+    docker_packages_state: present
+    docker_install_compose_plugin: true
+    docker_install_compose: false
+    docker_service_state: started
+    docker_service_enabled: true
+    docker_daemon_options: "{{ docker_daemon_options }}"
+
+# community.docker modules (docker_container_exec, etc.) drive the Docker
+# SDK for Python on the target host.
+- name: Install the Docker SDK for Python
+  ansible.builtin.apt:
+    name: python3-docker
+    state: present
+    update_cache: true
+    cache_valid_time: 3600

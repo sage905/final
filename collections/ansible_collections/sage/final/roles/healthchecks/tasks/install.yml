@@ -24,8 +24,8 @@
 # Container-managed runtime subtree. UID 999 matches the `hc` user inside
 # the healthchecks image (the image used to call it `app` at UID 1000 in
 # older tags; current ones use `hc`/999). Pre-chowning here means the
-# container's sqlite writes just work without depending on podman's `:U`
-# mount flag (which is inconsistent across Ubuntu's podman package
+# container's sqlite writes just work without depending on the runtime's `:U`
+# mount flag (which is inconsistent across runtimes (Docker has none)
 # versions). Stat-gated so we only set initial perms on first install.
 - name: Stat Healthchecks data dir
   ansible.builtin.stat:

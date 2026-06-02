@@ -41,15 +41,16 @@ pelican_panel_shared_network: web
 # Proxies the in-container Caddy trusts (for X-Forwarded-* headers). Pelican
 # passes this into Caddy's `trusted_proxies static`, so it must be valid
 # comma-separated CIDRs — not Laravel's `*`. Defaults to all RFC1918 ranges,
-# which covers whatever private subnet podman assigns the shared `web`
+# which covers whatever private subnet Docker assigns the shared `web`
 # network (10.89.0.0/24 by default). Tighten to the exact subnet if you want.
 pelican_panel_trusted_proxies: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 
 # --- Container runtime install -----------------------------------------------
-# Set to false on hosts where Podman is already managed elsewhere.
-pelican_panel_install_podman: true
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+pelican_panel_install_docker: false
 
-# Rootful: stack runs via system podman. pelican_panel_user owns the
+# Rootful: stack runs via system Docker. pelican_panel_user owns the
 # top-level compose project. The runtime data/log dirs are pre-chowned to
 # the container's web user instead (see pelican_panel_container_uid) so the
 # image — which runs as www-data and writes its SQLite DB, .env, and logs
@@ -59,8 +60,8 @@ pelican_panel_user: root
 # UID the Pelican image runs as inside the container. The official image is
 # Alpine-based with `USER www-data`, which is UID 82 on Alpine. The role
 # pre-chowns the bind-mounted data/log dirs to this UID (the same approach
-# sage.final.healthchecks uses, rather than podman's `:U` flag, which is
-# inconsistent across Ubuntu's podman versions). Override only if a future
+# sage.final.healthchecks uses, rather than the runtime's `:U` flag, which is
+# inconsistent across runtimes (Docker has none)). Override only if a future
 # image changes its runtime user.
 pelican_panel_container_uid: 82
 

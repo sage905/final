@@ -14,5 +14,5 @@ galaxy_info:
   galaxy_tags:
     - bracket
     - tournament
-    - podman
+    - docker
 dependencies: []

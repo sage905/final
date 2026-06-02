@@ -1,13 +1,13 @@
 ---
 # Packages to install. The base `cockpit` metapackage pulls in the web UI,
-# bridge, and recommended plugins. `cockpit-podman` adds the container
-# management UI, which is natural to include since the rest of this
-# collection deploys everything via Podman.
+# bridge, and recommended plugins. The collection now deploys containers via
+# rootful Docker; Cockpit ships no maintained Docker plugin, so container
+# management lives in Portainer (sage.final.portainer) instead and no
+# container module is installed here.
 # Override to add or remove modules like `cockpit-machines`,
 # `cockpit-networkmanager`, etc.
 cockpit_packages:
   - cockpit
-  - cockpit-podman
 
 # Whether to install from the `-backports` pocket on Ubuntu. Upstream
 # recommends this on 22.04 and newer to get current Cockpit releases.
