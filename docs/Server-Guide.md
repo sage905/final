@@ -14,7 +14,7 @@ Two ways to manage this server are described throughout:
   entirely (see Section 11).
 
 Both are first-class. The automation only *built* the server; nothing depends on
-it to keep *running*. Everything uses standard Ubuntu tools (Podman, systemd,
+it to keep *running*. Everything uses standard Ubuntu tools (Docker, systemd,
 UFW, borgmatic) that you can drive yourself.
 
 ---
@@ -39,7 +39,7 @@ everything.
 |---|---|
 | **Server name** | `coserver` |
 | **Your domain** | `chemicaloutlaws.com` |
-| **Admin user accounts** | `sage`, `final` (these can edit app files over SFTP) |
+| **Admin user accounts** | `<user>`, `final` (these can edit app files over SFTP) |
 | **How the automation connects** | It runs **locally on `coserver` itself** as `root` (`connection: local`) — you run the playbook on the server, not from another machine. |
 | **Offsite backups** | Hetzner Storage Box `u483449-sub3.your-storagebox.de`, nightly at 03:00 |
 | **Private network (VPN)** | This server is `192.168.129.2`, tunnelling to gateway `gate.toal.ca:51821` |
@@ -64,8 +64,8 @@ flowchart LR
         Caddy[Caddy<br/>front door + auto-HTTPS]
 
         Caddy -->|chemicaloutlaws.com| WP[WordPress]
-        Caddy -->|panel.chemicaloutlaws.com| Ptero[Pterodactyl Panel]
-        Caddy -->|node.chemicaloutlaws.com| Wings[Pterodactyl Wings]
+        Caddy -->|panel.chemicaloutlaws.com| Ptero[Pelican Panel]
+        Caddy -->|node.chemicaloutlaws.com| Wings[Pelican Wings]
         Caddy -->|media.chemicaloutlaws.com| JF[Jellyfin]
         Caddy -->|bracket.chemicaloutlaws.com| Bracket[Bracket]
         Caddy -.->|dashy.chemicaloutlaws.com<br/>internal only| Dashy[Dashy]
@@ -81,7 +81,7 @@ Solid lines are **public** (anyone on the internet can reach them). The dotted
 **internal only** sites (Dashy, Glance, Portainer, Healthchecks) return "403
 Access denied" unless the visitor comes from your private network — currently
 `192.168.0.0/16` or the single address `152.86.19.239`. All containers talk to
-each other on a private Podman network called `web`.
+each other on a private Docker network called `web`.
 
 ### Where things live on disk
 
@@ -105,21 +105,24 @@ flowchart TD
 | Application | Purpose | Web address | Public? | Data folder |
 |---|---|---|---|---|
 | **WordPress** | Website / blog (your main site) | `chemicaloutlaws.com` | Public | `/srv/wordpress` |
-| **Pterodactyl Panel** | Control panel for game servers (Minecraft, etc.) | `panel.chemicaloutlaws.com` | Public | `/srv/pterodactyl` |
-| **Pterodactyl Wings** | The engine that runs game servers (managed from the Panel) | `node.chemicaloutlaws.com` | Public | `/etc/pterodactyl`, `/var/lib/pterodactyl` |
+| **Pelican Panel** | Control panel for game servers (Minecraft, etc.) | `panel.chemicaloutlaws.com` | Public | `/srv/pelican` |
+| **Pelican Wings** | The engine that runs game servers (managed from the Panel) | `node.chemicaloutlaws.com` | Public | `/etc/pelican`, `/srv/gameservers` |
 | **Jellyfin** | Private media streaming (movies, TV, music) | `media.chemicaloutlaws.com` | Public | `/srv/jellyfin` (media in `/srv/bulk`) |
 | **Bracket** | Tournament-bracket system | `bracket.chemicaloutlaws.com` | Public | `/srv/bracket` |
 | **Dashy** | Customisable links/tiles dashboard | `dashy.chemicaloutlaws.com` | Internal only | `/srv/dashy` |
 | **Glance** | Lightweight info dashboard (feeds, widgets) | `glance.chemicaloutlaws.com` | Internal only | `/srv/glance` |
 
-> **Optional alternative — Pelican Panel.** A second game-panel role,
-> `sage.final.pelican_panel`, ships with this project but is **not currently
-> deployed**. [Pelican](https://pelican.dev/) is the modern successor to
-> Pterodactyl and runs as a single, simpler container (SQLite by default — no
-> separate database or Redis). It's a *drop-in replacement* for the Pterodactyl
-> Panel, not an addition: you'd run one or the other, never both on the same
-> host. See Section 10 for how to switch, and the role's README under
-> `collections/ansible_collections/sage/final/roles/pelican_panel/` for details.
+> **This server runs Pelican.** [Pelican](https://pelican.dev/) is the modern
+> successor to Pterodactyl and runs as a single, simpler container (SQLite by
+> default — no separate database or Redis), so there is no `pelican-database` or
+> `pelican-cache` helper container.
+>
+> **Optional alternative — Pterodactyl Panel.** The older `sage.final.pterodactyl_panel`
+> role still ships with this project but is **not currently deployed** (its
+> inventory group is commented out). The two panels are *drop-in replacements*
+> for each other, not an addition: you run one or the other, never both on the
+> same host. See Section 10 for how to switch, and the roles' READMEs under
+> `collections/ansible_collections/sage/final/roles/` for details.
 
 ### Behind-the-scenes services
 
@@ -140,10 +143,10 @@ flowchart TD
 
 ## 4. Five concepts that explain everything
 
-**1. Containers (Podman).** Every app runs in its own Podman container. Each
+**1. Containers (Docker).** Every app runs in its own Docker container. Each
 app's container is defined by a `docker-compose.yml` file in its `/srv/<app>`
-folder. You start, stop, update, and inspect apps with `podman` and
-`podman-compose` commands — covered in Section 6.
+folder. You start, stop, update, and inspect apps with `docker` and
+`docker compose` commands — covered in Section 6.
 
 **2. Caddy, the front door.** Only Caddy is exposed to the web (ports 80/443).
 It reads `/srv/caddy/Caddyfile`, which lists every web address and which app it
@@ -160,7 +163,7 @@ You can read them there with `sudo cat`. Secrets you provide (like the backup
 passphrase) are stored encrypted in the project with **Ansible Vault**.
 
 **5. Everything runs on standard Ubuntu services.** Containers are kept alive by
-Podman (`restart: always`), backups by a systemd timer, the firewall by UFW.
+Docker (`restart: always`), backups by a systemd timer, the firewall by UFW.
 None of this needs Ansible once it's set up — so you can run the server
 indefinitely by hand if you choose (Section 11).
 
@@ -187,7 +190,7 @@ You rarely need the command line. Two web dashboards cover most tasks:
 
 ## 6. Day-to-day app management (the manual way)
 
-Every app is a `podman-compose` stack living in `/srv/<app>`. The same handful
+Every app is a `docker compose` stack living in `/srv/<app>`. The same handful
 of commands works for all of them. Run them as a user with `sudo`, or as root.
 
 ```bash
@@ -195,36 +198,36 @@ of commands works for all of them. Run them as a user with `sudo`, or as root.
 cd /srv/jellyfin            # or wordpress, dashy, glance, bracket, caddy, ...
 
 # See what's running
-sudo podman-compose ps
+sudo docker compose ps
 
 # Start (or re-create after a config change)
-sudo podman-compose up -d
+sudo docker compose up -d
 
 # Stop
-sudo podman-compose down
+sudo docker compose down
 
 # Restart just this app
-sudo podman-compose restart
+sudo docker compose restart
 
 # Watch the logs live (Ctrl-C to stop)
-sudo podman-compose logs -f
+sudo docker compose logs -f
 
 # Update to the latest version: pull new images, then recreate
-sudo podman-compose pull && sudo podman-compose up -d
+sudo docker compose pull && sudo docker compose up -d
 ```
 
 Single-container shortcuts (handy in a pinch):
 
 ```bash
-sudo podman ps                      # list ALL running containers on the host
-sudo podman restart jellyfin        # restart one container by name
-sudo podman logs -f wordpress       # tail one container's logs
-sudo podman exec -it wordpress bash # open a shell inside a container
+sudo docker ps                      # list ALL running containers on the host
+sudo docker restart jellyfin        # restart one container by name
+sudo docker logs -f wordpress       # tail one container's logs
+sudo docker exec -it wordpress bash # open a shell inside a container
 ```
 
 **Editing an app's configuration.** Edit the files under `/srv/<app>` (for
 example `/srv/dashy/user-data/conf.yml` or `/srv/glance/config/glance.yml`),
-then `cd` into the folder and run `sudo podman-compose restart`. You can edit
+then `cd` into the folder and run `sudo docker compose restart`. You can edit
 these files directly on the server, through Cockpit's file browser, or over SFTP
 if your login is a member of that app's group (e.g. the `dashy` group).
 
@@ -260,7 +263,7 @@ a 403.
 **After editing the Caddyfile, reload Caddy without downtime:**
 
 ```bash
-sudo podman exec caddy caddy reload --config /etc/caddy/Caddyfile
+sudo docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 ```
 
 Caddy fetches a certificate for any new address automatically, as long as:
@@ -326,7 +329,7 @@ sudo borgmatic extract --archive <snapshot-name> --path srv/wordpress
 ```
 
 After restoring an app's folder, `cd /srv/<app>` and run
-`sudo podman-compose up -d` to bring it back online.
+`sudo docker compose up -d` to bring it back online.
 
 ```mermaid
 flowchart LR
@@ -346,9 +349,17 @@ flowchart LR
 SSH logins.
 
 ```bash
+sudo fail2ban-client status                 # list active jails
 sudo fail2ban-client status sshd            # see current bans
 sudo fail2ban-client set sshd unbanip <IP>  # lift a ban
 ```
+
+Only the `sshd` jail is active by default. The hardening role can also install
+**custom filters and jails** for services fail2ban ships no filter for — set
+`hardening_fail2ban_filters` and `hardening_fail2ban_extra_jails` in inventory,
+then re-run `--tags hardening`. The worked example in the role's
+`defaults/main.yml` bans scanners hitting **Pelican Wings' SFTP** (journald unit
+`wings.service`, port 2022) after 3 failures.
 
 **SSH lock-down.** Login is key-based only (no passwords). Settings live in the
 drop-in file `/etc/ssh/sshd_config.d/99-hardening.conf`. After editing it,
@@ -418,34 +429,38 @@ ansible-navigator run site.yml --tags hardening
 ```
 
 Available tags: `update`, `hardening`, `wireguard_client`, `cockpit`, `caddy`,
-`pterodactyl`, `pelican`, `wings`, `wordpress`, `dashy`, `glance`, `bracket`,
-`jellyfin`, `portainer`, `healthchecks`, `borg`. Add `--skip-tags update` to
-skip the OS upgrade. (The `pelican` play is dormant — it does nothing unless a
-host is placed in the `pelican_panel` group.)
+`pelican`, `pelican_wings`, `pterodactyl`, `wings`, `wordpress`, `dashy`,
+`glance`, `bracket`, `jellyfin`, `portainer`, `healthchecks`, `borg`. Add
+`--skip-tags update` to skip the OS upgrade. This server runs **Pelican** (tags
+`pelican` and `pelican_wings`); the `pterodactyl` / `wings` plays are dormant —
+they do nothing unless a host is placed in the `pterodactyl_panel` /
+`pterodactyl_wings` groups.
 
 **Where to change settings:** the `inventory/` folder holds per-server settings
 (web addresses, options, and Vault-encrypted secrets). Adding a public address
 means adding to the `caddy_sites` list there.
 
-### Switching the game panel from Pterodactyl to Pelican
+### Switching the game panel between Pelican and Pterodactyl
 
-The two panels can't run on the same host, and there's no in-place data
-conversion — switching is a migration, so do it when you can recreate your
-servers in the new panel. Outline:
+This server currently runs **Pelican**. The two panels can't run on the same
+host, and there's no in-place data conversion — switching is a migration, so do
+it only when you can recreate your servers in the other panel. To switch back to
+Pterodactyl:
 
-1. In inventory, move `coserver` from the `pterodactyl_panel` group into a new
-   `pelican_panel` group (leave the `pterodactyl_wings` / `pelican` Wings setup
-   to the panel UI afterward).
-2. Set `pelican_panel_fqdn` and `pelican_panel_admin_email` in
+1. In inventory, uncomment the `pterodactyl_panel` (and `pterodactyl_wings`)
+   group and remove `coserver` from the `pelican_panel` / `pelican_wings` groups.
+2. Set `pterodactyl_panel_fqdn` and the panel's other required vars in
    `inventory/group_vars/`.
-3. Repoint the panel's `caddy_sites` upstream from `pterodactyl-panel:80` to
-   `pelican-panel:80`.
-4. Run `ansible-navigator run site.yml --tags pelican,caddy`.
-5. Finish setup in a browser at `https://panel.chemicaloutlaws.com/installer`
-   (creates the first admin user; SQLite database by default).
+3. Repoint the panel's `caddy_sites` upstream from `pelican-panel:80` to
+   `pterodactyl-panel:80`.
+4. Run `ansible-navigator run site.yml --tags pterodactyl,wings,caddy`.
+5. Finish setup in the Pterodactyl installer in a browser.
 
-Pterodactyl's data stays untouched under `/srv/pterodactyl`, so you can fall
-back by reversing the inventory and Caddy changes.
+Pelican's data stays untouched under `/srv/pelican`, so you can fall back by
+reversing the inventory and Caddy changes. (Going the other direction —
+Pterodactyl → Pelican — is the same process with the groups swapped; Pelican
+finishes setup at `https://panel.chemicaloutlaws.com/installer`, SQLite by
+default.)
 
 > **Important:** if you make changes *by hand* on the server (Sections 6–9) and
 > later re-run a matching playbook tag, the playbook may overwrite your manual
@@ -473,22 +488,22 @@ Ansible was only the installer. To operate without it forever:
      `/srv/<app>/secrets/`.
 
 3. **Containers already survive reboots.** The stacks use `restart: always`, and
-   `podman-restart.service` is **enabled and active** on this server, so apps
+   `docker.service` is **enabled and active** on this server, so apps
    come back automatically after a reboot — no Ansible needed. Confirm any time
    with:
 
    ```bash
-   systemctl is-enabled podman-restart.service   # -> enabled
-   sudo podman ps                                 # all stacks running
+   systemctl is-enabled docker.service   # -> enabled
+   sudo docker ps                                 # all stacks running
    ```
 
    (If a stack is ever down after a reboot, just
-   `cd /srv/<app> && sudo podman-compose up -d`.)
+   `cd /srv/<app> && sudo docker compose up -d`.)
 
 4. **From then on, manage each app directly** with the commands in Sections 6–9:
-   - change an app → edit files under `/srv/<app>`, then `podman-compose up -d`
+   - change an app → edit files under `/srv/<app>`, then `docker compose up -d`
    - add a website → edit `/srv/caddy/Caddyfile`, then reload Caddy
-   - update an app → `podman-compose pull && podman-compose up -d`
+   - update an app → `docker compose pull && docker compose up -d`
    - backups, firewall, fail2ban, VPN → the commands already shown
 
 5. **Optional:** you can delete the Ansible project from your workstation. It
@@ -504,14 +519,14 @@ you fully control by hand.
 
 | Symptom | What to do |
 |---|---|
-| An app's page won't load | `sudo podman ps` — is its container running? If not, `cd /srv/<app> && sudo podman-compose up -d`. Then check Caddy is up (it serves every site): `sudo podman ps \| grep caddy`. |
-| App is running but errors | `cd /srv/<app> && sudo podman-compose logs -f` and read the recent lines. |
-| HTTPS certificate warning | Confirm the DNS name points at the server and ports 80/443 are open to the internet, then reload Caddy: `sudo podman exec caddy caddy reload --config /etc/caddy/Caddyfile`. Check Caddy's logs for the ACME error. |
+| An app's page won't load | `sudo docker ps` — is its container running? If not, `cd /srv/<app> && sudo docker compose up -d`. Then check Caddy is up (it serves every site): `sudo docker ps \| grep caddy`. |
+| App is running but errors | `cd /srv/<app> && sudo docker compose logs -f` and read the recent lines. |
+| HTTPS certificate warning | Confirm the DNS name points at the server and ports 80/443 are open to the internet, then reload Caddy: `sudo docker exec caddy caddy reload --config /etc/caddy/Caddyfile`. Check Caddy's logs for the ACME error. |
 | Backup alert from Healthchecks | Run `sudo borgmatic` manually and read the output; confirm the Hetzner box is reachable. Check `systemctl status borgmatic.service`. |
 | Can't reach Dashy, Glance, Portainer, or Healthchecks | They're internal-only on purpose — reach them from your private network (`192.168.0.0/16`) or over the WireGuard VPN. Confirm the tunnel with `sudo wg show`. |
 | Locked out / blocked by fail2ban | From an allowed network: `sudo fail2ban-client set sshd unbanip <your-IP>`. |
 | Whole server unreachable | Use your hosting provider's console to confirm it's powered on; check Cockpit at `:9090`. |
-| Server low on disk | In Cockpit, or `df -h`. Old container images can be cleared with `sudo podman image prune`. Remember `/srv/bulk` is not backed up — safe place for large temporary files. |
+| Server low on disk | In Cockpit, or `df -h`. Old container images can be cleared with `sudo docker image prune`. Remember `/srv/bulk` is not backed up — safe place for large temporary files. |
 
 ---
 
@@ -519,8 +534,8 @@ you fully control by hand.
 
 - **Ansible** — the automation that originally built the server from code.
 - **Playbook (`site.yml`)** — the instructions Ansible runs.
-- **Container / Podman** — an isolated package that runs one app; managed with
-  `podman` / `podman-compose`.
+- **Container / Docker** — an isolated package that runs one app; managed with
+  `docker` / `docker compose`.
 - **`docker-compose.yml`** — the file describing one app's container(s); one per
   app under `/srv/<app>`.
 - **Caddy** — the web server that handles HTTPS and routes addresses to apps.

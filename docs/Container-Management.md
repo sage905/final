@@ -7,7 +7,7 @@ container expert. For the big-picture tour of what each app is, see the
 mechanics of working with the containers themselves.
 
 Almost everything here can be done two ways: from the **host shell** (typing
-`podman` commands after you SSH in) or from **Portainer** (a web UI). Both are
+`docker` commands after you SSH in) or from **Portainer** (a web UI). Both are
 shown. Pick whichever you're comfortable with.
 
 ---
@@ -15,8 +15,8 @@ shown. Pick whichever you're comfortable with.
 ## 1. The host vs. the containers — the one idea to understand first
 
 Your server is **one** Ubuntu machine — that's the **host**. When you SSH in as
-`sage@coserver`, you are on the host. The host has the real disks, the firewall,
-SSH, `podman`, and the `/srv` folder.
+`<user>@coserver`, you are on the host. The host has the real disks, the firewall,
+SSH, `docker`, and the `/srv` folder.
 
 Each application runs inside its own **container**: a sealed, minimal mini-Linux
 that holds just that one app and the libraries it needs. The containers all run
@@ -26,8 +26,8 @@ that holds just that one app and the libraries it needs. The containers all run
 flowchart TB
     subgraph HOST["coserver — the HOST (real Ubuntu machine)"]
         direction TB
-        tools["You SSH here · podman · firewall · /srv (real files) · backups"]
-        subgraph PODS["Containers (managed by podman)"]
+        tools["You SSH here · docker · firewall · /srv (real files) · backups"]
+        subgraph PODS["Containers (managed by Docker)"]
             direction LR
             c1["caddy"]
             c2["wordpress"]
@@ -36,8 +36,8 @@ flowchart TB
             c5["…"]
         end
     end
-    you([You]) -->|ssh sage@coserver| tools
-    tools -.->|podman exec / logs / restart| PODS
+    you([You]) -->|ssh <user>@coserver| tools
+    tools -.->|docker exec / logs / restart| PODS
 ```
 
 Key consequences of this separation — keep these in mind and most confusion
@@ -49,7 +49,7 @@ disappears:
 - **Different software.** The host is a full Ubuntu with `apt`, `bash`, `sudo`,
   `systemctl`. A container usually has almost none of that — often not even
   `bash` (see §6).
-- **Different users.** On the host you're `sage`. Inside a container you're
+- **Different users.** On the host you're `<user>`. Inside a container you're
   whatever user that image uses — often `root`, but sometimes `www-data`,
   `node`, etc. "root inside a container" is not the same as root on the host.
 - **Containers are disposable.** The host is permanent. A container can be
@@ -64,14 +64,14 @@ disappears:
 From the host shell:
 
 ```bash
-ssh sage@coserver.chemicaloutlaws.com      # get onto the host first
+ssh <user>@coserver.chemicaloutlaws.com      # get onto the host first
 
-sudo podman ps                  # list running containers
-sudo podman ps -a               # include stopped ones
-sudo podman stats --no-stream   # one-shot CPU/memory per container
+sudo docker ps                  # list running containers
+sudo docker ps -a               # include stopped ones
+sudo docker stats --no-stream   # one-shot CPU/memory per container
 ```
 
-`podman ps` shows each container's **name** (e.g. `wordpress`, `jellyfin`) —
+`docker ps` shows each container's **name** (e.g. `wordpress`, `jellyfin`) —
 that name is what you use in every other command below.
 
 In **Portainer** (`https://portainer.chemicaloutlaws.com`, reachable from your
@@ -84,13 +84,15 @@ The containers currently on this server:
 |---|---|---|---|
 | `caddy` | Web front door (HTTPS) | `healthchecks` | Backup/cron monitoring |
 | `wordpress` / `wordpress-db` | WordPress + its database | `portainer` | This management UI |
-| `jellyfin` | Media streaming | `pterodactyl-panel` | Game-server panel … |
-| `dashy` | Dashboard | `pterodactyl-database` / `-cache` | …and its DB + Redis |
-| `glance` | Dashboard | `pelican-panel` | Alt. game panel (if used) |
-| `bracket` / `bracket-db` | Tournaments + its database | | |
+| `jellyfin` | Media streaming | `pelican-panel` | Game-server panel (Pelican) |
+| `dashy` | Dashboard | `bracket` / `bracket-db` | Tournaments + its database |
+| `glance` | Dashboard | | |
 
-The `-db`, `-database`, and `-cache` containers are *helpers* for the app next to
-them — you rarely touch them directly.
+The `-db` and `-database` containers are *helpers* for the app next to them —
+you rarely touch them directly. This server runs the **Pelican** game panel,
+which is a single container (`pelican-panel`, SQLite) with no separate database
+or cache. If you switch to Pterodactyl instead you'd see `pterodactyl-panel`
+plus its `pterodactyl-database` / `pterodactyl-cache` helpers.
 
 ---
 
@@ -101,36 +103,36 @@ Portainer.
 
 ### View a container's logs (the #1 troubleshooting tool)
 ```bash
-sudo podman logs wordpress           # recent logs
-sudo podman logs -f wordpress        # follow live (Ctrl-C to stop)
-sudo podman logs --tail 100 caddy    # last 100 lines
+sudo docker logs wordpress           # recent logs
+sudo docker logs -f wordpress        # follow live (Ctrl-C to stop)
+sudo docker logs --tail 100 caddy    # last 100 lines
 ```
 *Portainer:* Containers → click the container → **Logs**.
 
 ### Restart a container
 ```bash
-sudo podman restart jellyfin
+sudo docker restart jellyfin
 ```
 *Portainer:* Containers → tick the box → **Restart**. Safe and quick; the app is
 unavailable for a few seconds.
 
 ### Stop / start a container
 ```bash
-sudo podman stop dashy
-sudo podman start dashy
+sudo docker stop dashy
+sudo docker start dashy
 ```
 *Portainer:* the **Stop** / **Start** buttons.
 
 ### Check status / resource use
 ```bash
-sudo podman ps                       # is it up?
-sudo podman stats --no-stream        # CPU + memory snapshot
+sudo docker ps                       # is it up?
+sudo docker stats --no-stream        # CPU + memory snapshot
 ```
 *Portainer:* the **Containers** list shows state; click one for **Stats**.
 
 > **Restart vs. stop vs. "down":** `restart`/`stop`/`start` act on a single
 > container and keep it around. Re-creating a whole app (all its containers) is a
-> different operation done from its `/srv/<app>` folder with `podman-compose` —
+> different operation done from its `/srv/<app>` folder with `docker compose` —
 > see §7. You won't need that for routine work.
 
 ---
@@ -142,12 +144,12 @@ app's own command-line tool, test connectivity. This is called "exec-ing in".
 
 ### From the host shell
 
-The pattern is `podman exec -it <container> <shell>`. Most images have `sh`;
+The pattern is `docker exec -it <container> <shell>`. Most images have `sh`;
 some also have `bash`. Try `bash`, and fall back to `sh`:
 
 ```bash
-sudo podman exec -it wordpress bash      # works on wordpress, jellyfin, etc.
-sudo podman exec -it caddy sh            # caddy only has sh
+sudo docker exec -it wordpress bash      # works on wordpress, jellyfin, etc.
+sudo docker exec -it caddy sh            # caddy only has sh
 ```
 
 - `-it` means "interactive terminal" — without it you won't get a prompt.
@@ -159,9 +161,9 @@ sudo podman exec -it caddy sh            # caddy only has sh
 back, skip the `-it` and put the command at the end:
 
 ```bash
-sudo podman exec wordpress php -v                       # check PHP version
-sudo podman exec pelican-panel php artisan about        # Pelican/Laravel info
-sudo podman exec wordpress-db mariadb --version
+sudo docker exec wordpress php -v                       # check PHP version
+sudo docker exec pelican-panel php artisan about        # Pelican/Laravel info
+sudo docker exec wordpress-db mariadb --version
 ```
 
 **Need to be root inside?** Some containers run as a non-root user (e.g.
@@ -169,10 +171,10 @@ sudo podman exec wordpress-db mariadb --version
 that container* to inspect something, add `-u root`:
 
 ```bash
-sudo podman exec -it -u root pelican-panel sh
+sudo docker exec -it -u root pelican-panel sh
 ```
 
-### From Portainer (no typing of `podman`)
+### From Portainer (no typing of `docker`)
 
 1. **Containers** → click the container.
 2. Click **Console** (or the **>_** icon).
@@ -201,7 +203,7 @@ exec-ing into game containers by hand can fight with the panel.
 
 For a **database prompt**, exec into the DB container and run its client:
 ```bash
-sudo podman exec -it wordpress-db mariadb -u root -p     # it will ask for the password
+sudo docker exec -it wordpress-db mariadb -u root -p     # it will ask for the password
 # password is in /srv/wordpress/secrets/db_root_password on the host
 ```
 
@@ -217,7 +219,7 @@ Container images ship only what the app needs. On this server:
 
 | Has `bash` | Only `sh` (no bash) | No shell at all |
 |---|---|---|
-| `wordpress`, `wordpress-db`, `jellyfin`, `healthchecks`, `pterodactyl-panel`, `pterodactyl-database`, `bracket-db` | `caddy`, `dashy`, `glance`, `bracket`, `pelican-panel`, `pterodactyl-cache` | `portainer` |
+| `wordpress`, `wordpress-db`, `jellyfin`, `healthchecks`, `bracket-db` | `caddy`, `dashy`, `glance`, `bracket`, `pelican-panel` | `portainer` |
 
 So `apt install …` inside a container will usually fail (`apt: not found`), and
 there is no `systemctl` because a container runs **one** process, not a full init
@@ -226,7 +228,7 @@ system. **Portainer has no shell at all** — you manage it only through its web
 **2. Anything you install or edit inside a container is temporary.**
 If you *do* manage to install a tool or edit a config *inside* a running
 container, it lives only until that container is recreated — which happens on the
-next update or `podman-compose up`. The container is rebuilt from its fixed image
+next update or `docker compose up`. The container is rebuilt from its fixed image
 and your change vanishes. **This is by design.** Lasting changes are made on the
 host instead (§7).
 
@@ -264,17 +266,17 @@ sudo nano /srv/dashy/user-data/conf.yml
 
 # 2. Apply it by recreating that app's containers from its folder
 cd /srv/dashy
-sudo podman-compose up -d        # picks up changes; recreates only what changed
+sudo docker compose up -d        # picks up changes; recreates only what changed
 ```
 
 Other useful whole-app commands from inside an app's `/srv/<app>` folder:
 
 ```bash
-sudo podman-compose ps           # status of just this app's containers
-sudo podman-compose logs -f      # logs for the whole app (all its containers)
-sudo podman-compose pull         # download newer image versions
-sudo podman-compose up -d        # recreate with the new images (an update)
-sudo podman-compose down         # stop & remove this app's containers (data on /srv stays)
+sudo docker compose ps           # status of just this app's containers
+sudo docker compose logs -f      # logs for the whole app (all its containers)
+sudo docker compose pull         # download newer image versions
+sudo docker compose up -d        # recreate with the new images (an update)
+sudo docker compose down         # stop & remove this app's containers (data on /srv stays)
 ```
 
 Because the data is on `/srv`, `down` then `up -d` does **not** lose your data —
@@ -290,41 +292,42 @@ only the container processes are replaced; the files on the host remain.
 
 **Q: I edited a file inside a container and after an update it's gone. Why?**
 Because in-container changes are temporary (§6.2). Edit the copy under
-`/srv/<app>` on the host instead, then `podman-compose up -d` (§7).
+`/srv/<app>` on the host instead, then `docker compose up -d` (§7).
 
-**Q: `podman exec -it caddy bash` says "no such file or directory".**
-That image has no `bash`. Use `sh`: `sudo podman exec -it caddy sh`.
+**Q: `docker exec -it caddy bash` says "no such file or directory".**
+That image has no `bash`. Use `sh`: `sudo docker exec -it caddy sh`.
 
 **Q: I get "permission denied" inside a container.**
 You're not root in that container. Reconnect with `-u root`:
-`sudo podman exec -it -u root <name> sh`.
+`sudo docker exec -it -u root <name> sh`.
 
 **Q: How do I update an app to the latest version?**
-`cd /srv/<app> && sudo podman-compose pull && sudo podman-compose up -d`. In
+`cd /srv/<app> && sudo docker compose pull && sudo docker compose up -d`. In
 Portainer you can also recreate a container and tick "re-pull image".
 
 **Q: A container keeps restarting / shows "unhealthy".**
-Read its logs first: `sudo podman logs --tail 100 <name>`. The reason is almost
+Read its logs first: `sudo docker logs --tail 100 <name>`. The reason is almost
 always in there (bad config, can't reach its database, permissions).
 
 **Q: Which container is which app?** See the table in §2, or
-`sudo podman ps` and read the names.
+`sudo docker ps` and read the names.
 
 **Q: Will restarting a container lose data?**
 No. `restart`/`stop`/`start`, and even `down`+`up`, keep everything under
 `/srv/<app>`. Only data written *inside* a container off-volume is transient.
 
 **Q: How do I see how much CPU/RAM things use?**
-`sudo podman stats --no-stream`, or Portainer's **Stats** per container, or the
+`sudo docker stats --no-stream`, or Portainer's **Stats** per container, or the
 [Cockpit](Server-Guide.md) dashboard for the whole machine.
 
-**Q: Do I need `sudo` for every `podman` command?**
-On this server, yes — the containers run under the system (rootful) podman, so
-`podman` commands need `sudo`. Inside Portainer you're already authenticated.
+**Q: Do I need `sudo` for every `docker` command?**
+On this server, yes — the containers run under the system (rootful) Docker and
+`<user>` is not in the `docker` group, so `docker` commands need `sudo`. Inside
+Portainer you're already authenticated.
 
-**Q: Is it safe to `podman stop` an app to "reboot" it?**
-Yes. `stop` then `start` (or just `restart`) is safe. Avoid `podman rm` /
-`podman rmi` / `podman volume rm` unless you know what they do — those delete
+**Q: Is it safe to `docker stop` an app to "reboot" it?**
+Yes. `stop` then `start` (or just `restart`) is safe. Avoid `docker rm` /
+`docker rmi` / `docker volume rm` unless you know what they do — those delete
 containers/images/volumes.
 
 **Q: I'm lost inside a container shell — how do I get out?**
@@ -335,24 +338,24 @@ Type `exit` (or press `Ctrl-D`). You'll be back on the host prompt.
 ## 9. Quick reference card
 
 ```text
-ON THE HOST (after: ssh sage@coserver.chemicaloutlaws.com)
+ON THE HOST (after: ssh <user>@coserver.chemicaloutlaws.com)
 
-  sudo podman ps                      list running containers
-  sudo podman logs -f NAME            follow a container's logs
-  sudo podman restart NAME            restart one container
-  sudo podman stop|start NAME         stop / start one container
-  sudo podman stats --no-stream       CPU & memory snapshot
-  sudo podman exec -it NAME bash      shell inside (try bash, else sh)
-  sudo podman exec -it -u root NAME sh  root shell inside
-  sudo podman exec NAME <cmd>         run one command inside
+  sudo docker ps                      list running containers
+  sudo docker logs -f NAME            follow a container's logs
+  sudo docker restart NAME            restart one container
+  sudo docker stop|start NAME         stop / start one container
+  sudo docker stats --no-stream       CPU & memory snapshot
+  sudo docker exec -it NAME bash      shell inside (try bash, else sh)
+  sudo docker exec -it -u root NAME sh  root shell inside
+  sudo docker exec NAME <cmd>         run one command inside
 
 PER APP (after: cd /srv/<app>)
 
-  sudo podman-compose ps              this app's containers
-  sudo podman-compose logs -f         this app's logs
-  sudo podman-compose up -d           apply config / recreate
-  sudo podman-compose pull            fetch newer images
-  sudo podman-compose down            stop+remove (data on /srv stays)
+  sudo docker compose ps              this app's containers
+  sudo docker compose logs -f         this app's logs
+  sudo docker compose up -d           apply config / recreate
+  sudo docker compose pull            fetch newer images
+  sudo docker compose down            stop+remove (data on /srv stays)
 
 REMEMBER
   • Edit lasting changes on the HOST under /srv/<app>, not inside the container.
