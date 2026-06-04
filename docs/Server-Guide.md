@@ -15,7 +15,7 @@ Two ways to manage this server are described throughout:
 
 Both are first-class. The automation only *built* the server; nothing depends on
 it to keep *running*. Everything uses standard Ubuntu tools (Docker, systemd,
-UFW, borgmatic) that you can drive yourself.
+WireGuard, borgmatic) that you can drive yourself.
 
 ---
 
@@ -43,11 +43,6 @@ everything.
 | **How the automation connects** | It runs **locally on `coserver` itself** as `root` (`connection: local`) — you run the playbook on the server, not from another machine. |
 | **Offsite backups** | Hetzner Storage Box `u483449-sub3.your-storagebox.de`, nightly at 03:00 |
 | **Private network (VPN)** | This server is `192.168.129.2`, tunnelling to gateway `gate.toal.ca:51821` |
-
-> **One thing to fix when you get a chance** (details in Section 9): the host
-> firewall (UFW) is switched off. Today the server relies on the upstream gateway
-> for perimeter filtering; turning on the host firewall is recommended.
-> (Automatic security patching *is* on.)
 
 ---
 
@@ -133,7 +128,7 @@ flowchart TD
 | **Borg / Borgmatic** | Encrypted nightly offsite backup of `/srv` to Hetzner | runs from a systemd timer |
 | **Cockpit** | Web dashboard for the **machine** (CPU, RAM, disks, logs, updates) | `https://coserver:9090` (or the server's LAN IP) |
 | **Portainer** | Web dashboard for the **containers** (restart, logs, terminal) | `portainer.chemicaloutlaws.com` (internal only) |
-| **Hardening** | SSH lock-down, fail2ban, kernel hardening, automatic security patches (host firewall is *off* — see Section 9) | system-wide |
+| **Hardening** | SSH lock-down, fail2ban, kernel hardening, automatic security patches | system-wide |
 | **WireGuard** | Encrypted VPN tunnel to your private network (gateway `gate.toal.ca`) | `/etc/wireguard/wg0.conf` |
 
 > The folders `disk_os`, `disk_pool`, `disk_stripe`, and `run` in the project are
@@ -163,7 +158,7 @@ You can read them there with `sudo cat`. Secrets you provide (like the backup
 passphrase) are stored encrypted in the project with **Ansible Vault**.
 
 **5. Everything runs on standard Ubuntu services.** Containers are kept alive by
-Docker (`restart: always`), backups by a systemd timer, the firewall by UFW.
+Docker (`restart: always`), backups by a systemd timer, the VPN by WireGuard.
 None of this needs Ansible once it's set up — so you can run the server
 indefinitely by hand if you choose (Section 11).
 
@@ -378,29 +373,12 @@ sudo wg show                              # is the tunnel up?
 sudo systemctl restart wg-quick@wg0       # restart the tunnel
 ```
 
-### Currently OFF — recommended to turn on
+> The host firewall (UFW) is intentionally left off — perimeter filtering is
+> handled by the upstream gateway, so the host doesn't run its own firewall.
 
-These protections exist in the setup but are **not enabled** in your current
-configuration. The server presently leans on the upstream gateway for perimeter
-filtering.
+### Recommended housekeeping
 
-**1. Host firewall (UFW)** — not active. To enable a default-deny firewall that
-still allows your services, you can switch it on in the automation
-(`hardening_firewall_enabled: true` in inventory, then re-run `--tags
-hardening`), or do it by hand:
-
-```bash
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow 22/tcp        # SSH — add this BEFORE enabling, or you lock yourself out
-sudo ufw allow 80,443/tcp    # web
-sudo ufw allow 9090/tcp      # Cockpit
-sudo ufw allow 25565/tcp     # Minecraft (adjust to your games)
-sudo ufw enable
-sudo ufw status numbered     # review
-```
-
-**2. Rotate the Healthchecks admin password.** The Healthchecks superuser
+**Rotate the Healthchecks admin password.** The Healthchecks superuser
 (`admin@chemicaloutlaws.com`) was bootstrapped with a weak password stored in
 plain text in the inventory. Change it in the Healthchecks web UI, and replace
 the inventory value with an `ansible-vault`-encrypted one.
@@ -504,7 +482,7 @@ Ansible was only the installer. To operate without it forever:
    - change an app → edit files under `/srv/<app>`, then `docker compose up -d`
    - add a website → edit `/srv/caddy/Caddyfile`, then reload Caddy
    - update an app → `docker compose pull && docker compose up -d`
-   - backups, firewall, fail2ban, VPN → the commands already shown
+   - backups, fail2ban, VPN → the commands already shown
 
 5. **Optional:** you can delete the Ansible project from your workstation. It
    does not run on the server and removing it changes nothing there. (Keep a
@@ -545,7 +523,7 @@ you fully control by hand.
   ones you supply) encrypted with **Ansible Vault**.
 - **Borg / Borgmatic** — the encrypted offsite backup system.
 - **Healthchecks** — alerts you when a scheduled job fails to check in.
-- **UFW / fail2ban** — the firewall and the automatic intruder-blocker.
+- **fail2ban** — the automatic intruder-blocker (bans repeated failed logins).
 - **WireGuard** — the encrypted VPN tunnel to your private network.
 - **systemd timer** — Ubuntu's scheduler; runs the nightly backup.
 - **DNS record** — the setting at your domain registrar that points a web
