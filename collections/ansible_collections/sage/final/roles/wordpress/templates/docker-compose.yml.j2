@@ -37,6 +37,7 @@ services:
         define('FS_METHOD', 'direct');
     volumes:
       - "{{ wordpress_data_dir }}/wordpress:/var/www/html"
+      - "{{ wordpress_data_dir }}/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro"
     networks:
       - shared
 

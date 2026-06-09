@@ -23,6 +23,22 @@ argument_specs:
       # validate_argument_spec / AnsibleVaultEncryptedUnicode note in
       # other role argument_specs. Both default to "" in defaults/main.yml,
       # auto-generated on the target host if not supplied.
+      wordpress_upload_max_filesize:
+        type: str
+        default: 256M
+        description: PHP upload_max_filesize for the wordpress container.
+      wordpress_post_max_size:
+        type: str
+        default: 256M
+        description: PHP post_max_size; should be >= wordpress_upload_max_filesize.
+      wordpress_memory_limit:
+        type: str
+        default: 512M
+        description: PHP memory_limit; should be >= wordpress_post_max_size.
+      wordpress_max_execution_time:
+        type: int
+        default: 300
+        description: PHP max_execution_time (seconds) for large uploads.
       wordpress_shared_network:
         type: str
         default: web

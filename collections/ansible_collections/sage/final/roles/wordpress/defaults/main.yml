@@ -11,6 +11,15 @@ wordpress_db_user: wordpress
 wordpress_db_password: ""
 wordpress_db_root_password: ""
 
+# --- Upload limits ------------------------------------------------------------
+# PHP gates upload size in the wordpress (Apache+PHP) image. These render
+# into a conf.d/ ini mounted into the container. post_max_size should be
+# >= upload_max_filesize, and memory_limit >= post_max_size.
+wordpress_upload_max_filesize: 256M
+wordpress_post_max_size: 256M
+wordpress_memory_limit: 512M
+wordpress_max_execution_time: 300
+
 # Name of the external Docker network this stack joins. The caddy role
 # creates it; this role attaches as external: true.
 wordpress_shared_network: web

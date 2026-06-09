@@ -1,0 +1,6 @@
+; {{ ansible_managed }}
+; Raises PHP's default upload limits so large media/plugins can be uploaded.
+upload_max_filesize = {{ wordpress_upload_max_filesize }}
+post_max_size = {{ wordpress_post_max_size }}
+memory_limit = {{ wordpress_memory_limit }}
+max_execution_time = {{ wordpress_max_execution_time }}
