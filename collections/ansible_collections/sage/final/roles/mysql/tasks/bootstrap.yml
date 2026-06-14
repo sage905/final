@@ -36,10 +36,15 @@
     # First boot initialises the data directory and runs migrations, during
     # which the server is not yet accepting queries. Poll until a trivial
     # query succeeds (up to 5 min).
+    # `docker exec` does NOT forward the host's environment into the container,
+    # so MYSQL_PWD must be passed through explicitly with `-e MYSQL_PWD` (no
+    # value = take it from the CLI env set by the `environment:` keyword below).
+    # Without this the in-container mariadb client gets no password and the
+    # probe loops until timeout even though the server is up.
     - name: Wait for MariaDB to accept queries
       ansible.builtin.command:
         cmd: >-
-          docker exec {{ mysql_container_name }}
+          docker exec -e MYSQL_PWD {{ mysql_container_name }}
           mariadb -uroot -e "SELECT 1"
       environment:
         MYSQL_PWD: "{{ mysql_effective_root_password }}"
@@ -58,7 +63,7 @@
     - name: Check whether the panel management user exists
       ansible.builtin.command:
         cmd: >-
-          docker exec {{ mysql_container_name }}
+          docker exec -e MYSQL_PWD {{ mysql_container_name }}
           mariadb -uroot -N -B -e
           "SELECT COUNT(*) FROM mysql.user
            WHERE user = '{{ mysql_panel_user }}'
@@ -71,7 +76,7 @@
 
     - name: Create the panel management user with global grant option
       ansible.builtin.command:
-        cmd: "docker exec -i {{ mysql_container_name }} mariadb -uroot"
+        cmd: "docker exec -i -e MYSQL_PWD {{ mysql_container_name }} mariadb -uroot"
         stdin: >-
           CREATE USER '{{ mysql_panel_user }}'@'{{ mysql_panel_user_host }}'
           IDENTIFIED BY '{{ mysql_effective_panel_password }}';
