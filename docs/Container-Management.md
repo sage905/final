@@ -94,6 +94,18 @@ which is a single container (`pelican-panel`, SQLite) with no separate database
 or cache. If you switch to Pterodactyl instead you'd see `pterodactyl-panel`
 plus its `pterodactyl-database` / `pterodactyl-cache` helpers.
 
+If the optional game-server **database host** is deployed (a host in the `mysql`
+inventory group), you'll also see two more containers:
+
+| Container | App it runs |
+|---|---|
+| `mysql` | MariaDB database server — the panel's "Database Host" for game servers |
+| `mysql-adminer` | Adminer — web UI to browse/edit those databases |
+
+Unlike the per-app `-db` helpers above, `mysql` is a *shared* database the panel
+uses to hand each game server its own database. Its passwords live in
+`/srv/mysql/secrets/`.
+
 ---
 
 ## 3. The four everyday commands
@@ -205,7 +217,12 @@ For a **database prompt**, exec into the DB container and run its client:
 ```bash
 sudo docker exec -it wordpress-db mariadb -u root -p     # it will ask for the password
 # password is in /srv/wordpress/secrets/db_root_password on the host
+
+# If the optional game-server database host is deployed:
+sudo docker exec -it mysql mariadb -u root -p            # password in /srv/mysql/secrets/root_password
 ```
+For the game-server database host you'd usually use the **Adminer** web UI
+(`mysql-adminer`, fronted by Caddy) instead of the command line.
 
 ---
 

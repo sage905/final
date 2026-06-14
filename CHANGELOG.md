@@ -25,6 +25,13 @@ project is not yet versioned, so entries are grouped under **Unreleased**.
   Pterodactyl→Pelican migration. (`3e1bdb0`)
 
 ### Added
+- **MySQL database-host role** (`sage.final.mysql`) — runs a dedicated MariaDB
+  container as a Docker Compose stack to serve as the panel's "Database Host",
+  provisioning a database per game server. Creates a global-privilege `panel`
+  management user (auto-generated, persisted secrets), publishes 3306 on the
+  host so remote Wings nodes/game servers can connect, and ships **Adminer** as
+  the modern phpMyAdmin replacement fronted by the shared Caddy. Wired into
+  `site.yml` under the `mysql` tag/host group.
 - **Pelican Wings role** (`sage.final.pelican_wings`) — installs the upstream
   Wings binary and systemd unit as the Pelican-native game-server daemon,
   alongside the existing Pelican Panel role. (`03bc360`, `e50ac90`)

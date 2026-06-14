@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  role_name: mysql
+  namespace: sage
+  author: Sage
+  description: >-
+    Run a dedicated MariaDB (MySQL) database host for the game-server panel as
+    a Docker Compose stack, with Adminer as the web management UI.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - mysql
+    - mariadb
+    - database
+    - adminer
+    - docker
+    - compose
+    - gameserver
+    - panel
+dependencies: []

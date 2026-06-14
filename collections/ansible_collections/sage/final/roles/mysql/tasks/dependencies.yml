@@ -1,0 +1,13 @@
+---
+- name: Assert that the target host is Ubuntu
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Ubuntu'
+    fail_msg: >-
+      sage.final.mysql currently supports Ubuntu only. Detected
+      distribution: {{ ansible_facts['distribution'] | default('unknown') }}.
+
+- name: Install the Docker engine and Compose plugin
+  ansible.builtin.include_role:
+    name: sage.final.docker
+  when: mysql_install_docker

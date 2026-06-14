@@ -1,0 +1,85 @@
+---
+# --- Stack location -----------------------------------------------------------
+# Root directory on the host holding the compose project, secrets, the
+# server config, and the bind-mounted MariaDB data volume.
+mysql_data_dir: /srv/mysql
+
+# --- Database image -----------------------------------------------------------
+# MariaDB is a drop-in MySQL server and the upstream-recommended database for
+# Pelican/Pterodactyl. `:11.4` is the current LTS; pin a tag for reproducible
+# deploys. The container is named so the panel and Adminer can reach it by
+# hostname on the shared network.
+mysql_image: docker.io/library/mariadb:11.4
+mysql_container_name: mysql
+
+# --- Credentials --------------------------------------------------------------
+# Both default to empty and are auto-generated once on the target host and
+# persisted under {{ mysql_data_dir }}/secrets/. Supply your own (ideally
+# vaulted) to override.
+mysql_root_password: ""
+
+# Management account the panel uses as a "Database Host". The panel logs in as
+# this user to create a fresh database + user for each game server on demand,
+# so it is granted ALL PRIVILEGES ... WITH GRANT OPTION. NOT a per-game-server
+# account — those are created by the panel itself at runtime.
+mysql_panel_user: panel
+mysql_panel_password: ""
+
+# Host pattern the management user (and, by extension, the panel) connects
+# from. '%' = any host, which is what a remote panel/Wings node needs. Narrow
+# to a specific subnet/IP if the panel shares this host.
+mysql_panel_user_host: "%"
+
+# --- Port publishing ----------------------------------------------------------
+# Game servers run under Wings (often on separate nodes) and connect directly
+# to this database using the address the panel hands them. So the MySQL port is
+# published on the host, unlike the other stacks which stay network-internal.
+# Bind to a specific host IP (e.g. a WireGuard/private address) to limit
+# exposure; "0.0.0.0" publishes on all interfaces.
+mysql_published_address: "0.0.0.0"
+mysql_published_port: 3306
+
+# --- Server tuning ------------------------------------------------------------
+# Rendered into a conf.d/ snippet. A database host fronting many game servers
+# needs more than the default 151 connections.
+mysql_max_connections: 200
+
+# --- Database management UI (Adminer) -----------------------------------------
+# Adminer is the modern, single-container successor to phpMyAdmin: one tiny
+# image, no configuration, supports MySQL/MariaDB/PostgreSQL/SQLite. It joins
+# the shared network and is fronted by the shared Caddy (declare a caddy_sites
+# entry pointing at "{{ mysql_adminer_container_name }}:{{ mysql_adminer_container_port }}")
+# — it is NOT published on the host. Set false to skip it.
+mysql_adminer_enabled: true
+mysql_adminer_image: docker.io/library/adminer:latest
+mysql_adminer_container_name: mysql-adminer
+mysql_adminer_container_port: 8080
+# Pre-fills Adminer's "Server" field with the database container so admins only
+# enter credentials.
+mysql_adminer_default_server: mysql
+
+# --- Shared network (provided by sage.final.caddy) ----------------------------
+mysql_shared_network: web
+
+# --- Container runtime install ------------------------------------------------
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+mysql_install_docker: false
+
+# Rootful: stack runs via system Docker. mysql_user owns the top-level compose
+# project and secrets. The data dir is pre-chowned to the container's mysql
+# user (mysql_container_uid) so the image — which runs as that UID and writes
+# its data files there — can write through the bind mount.
+mysql_user: root
+
+# UID the MariaDB image runs as inside the container (the `mysql` user, UID 999
+# on the official image). The data bind mount is pre-chowned to this UID every
+# run so a previously root-owned dir self-heals (same approach as
+# sage.final.healthchecks). Override only if a future image changes its user.
+mysql_container_uid: 999
+
+# Group that owns the stack's files on the host. Admins in
+# mysql_group_members can read/write {{ mysql_data_dir }} top-level files
+# (compose, server config) via SFTP.
+mysql_group: mysql
+mysql_group_members: []

@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+# Mounted read-only at /etc/mysql/conf.d/99-sage.cnf inside the container.
+[mariadbd]
+# Listen on all container interfaces so the published host port and other
+# containers on the shared network can connect.
+bind-address = 0.0.0.0
+
+# A database host fronting many game servers needs more than the stock 151.
+max_connections = {{ mysql_max_connections }}
+
+# utf8mb4 is the sane default for modern apps and game-server schemas.
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci

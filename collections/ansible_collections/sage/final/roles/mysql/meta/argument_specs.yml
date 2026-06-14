@@ -1,0 +1,89 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy a dedicated MariaDB database host plus Adminer.
+    options:
+      mysql_data_dir:
+        type: path
+        default: /srv/mysql
+        description: Host directory holding the compose project, secrets, config, and data volume.
+      mysql_image:
+        type: str
+        default: docker.io/library/mariadb:11.4
+        description: MariaDB image. Pin to a release tag for reproducibility.
+      mysql_container_name:
+        type: str
+        default: mysql
+        description: Container/hostname the panel and Adminer use to reach the database.
+      # mysql_root_password and mysql_panel_password are vault-prone and
+      # intentionally NOT in this spec (validate_argument_spec rejects
+      # AnsibleVaultEncryptedUnicode). Both default to "" in defaults/main.yml
+      # and are auto-generated on the target host if not supplied.
+      mysql_panel_user:
+        type: str
+        default: panel
+        description: >-
+          Management account the panel uses as a Database Host. Granted global
+          privileges with GRANT OPTION so the panel can create a database per
+          game server.
+      mysql_panel_user_host:
+        type: str
+        default: "%"
+        description: Host pattern the management user connects from ('%' = any host).
+      mysql_published_address:
+        type: str
+        default: "0.0.0.0"
+        description: Host IP the MySQL port is published on. Narrow to limit exposure.
+      mysql_published_port:
+        type: int
+        default: 3306
+        description: Host port mapped to the container's 3306.
+      mysql_max_connections:
+        type: int
+        default: 200
+        description: MariaDB max_connections; raise for many concurrent game servers.
+      mysql_adminer_enabled:
+        type: bool
+        default: true
+        description: Deploy the Adminer web database management UI alongside the database.
+      mysql_adminer_image:
+        type: str
+        default: docker.io/library/adminer:latest
+      mysql_adminer_container_name:
+        type: str
+        default: mysql-adminer
+      mysql_adminer_container_port:
+        type: int
+        default: 8080
+        description: Port Adminer listens on; the shared Caddy proxies to it.
+      mysql_adminer_default_server:
+        type: str
+        default: mysql
+        description: Pre-fills Adminer's Server field (defaults to the database container).
+      mysql_shared_network:
+        type: str
+        default: web
+        description: External Docker network shared with the caddy role.
+      mysql_install_docker:
+        type: bool
+        default: false
+      mysql_user:
+        type: str
+        default: root
+        description: Host user owning the top-level compose project and secrets.
+      mysql_container_uid:
+        type: int
+        default: 999
+        description: >-
+          UID the MariaDB image runs as (the `mysql` user, UID 999). The data
+          bind mount is pre-chowned to this UID.
+      mysql_group:
+        type: str
+        default: mysql
+      mysql_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to mysql_group. Listed users must
+          already exist on the host.

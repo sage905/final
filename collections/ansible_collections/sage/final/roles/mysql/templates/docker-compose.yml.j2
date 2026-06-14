@@ -1,0 +1,48 @@
+---
+# {{ ansible_managed }}
+name: mysql
+
+services:
+  mysql:
+    image: {{ mysql_image }}
+    container_name: {{ mysql_container_name }}
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: "{{ mysql_effective_root_password }}"
+      # Allow the root account to connect from the published port too (the
+      # panel uses the dedicated panel user, but this eases admin access).
+      MARIADB_ROOT_HOST: "%"
+    volumes:
+      - "{{ mysql_data_dir }}/data:/var/lib/mysql"
+      - "{{ mysql_data_dir }}/mysql.cnf:/etc/mysql/conf.d/99-sage.cnf:ro"
+    # Published on the host so Wings nodes / game servers on other hosts can
+    # connect using the address the panel hands them.
+    ports:
+      - "{{ mysql_published_address }}:{{ mysql_published_port }}:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - shared
+{% if mysql_adminer_enabled %}
+
+  adminer:
+    image: {{ mysql_adminer_image }}
+    container_name: {{ mysql_adminer_container_name }}
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      ADMINER_DEFAULT_SERVER: "{{ mysql_adminer_default_server }}"
+    # No host port — fronted by the shared Caddy via a caddy_sites entry
+    # pointing at {{ mysql_adminer_container_name }}:{{ mysql_adminer_container_port }}.
+    networks:
+      - shared
+{% endif %}
+
+networks:
+  shared:
+    name: {{ mysql_shared_network }}
+    external: true

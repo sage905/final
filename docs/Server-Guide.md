@@ -119,6 +119,18 @@ flowchart TD
 > same host. See Section 10 for how to switch, and the roles' READMEs under
 > `collections/ansible_collections/sage/final/roles/` for details.
 
+> **Optional — dedicated game-server database (MySQL).** By default the Pelican
+> panel uses its own embedded SQLite, and individual game servers only get a
+> database if you give them one. The `sage.final.mysql` role adds a dedicated
+> **MariaDB (MySQL)** container to act as the panel's *Database Host*: once
+> configured, the panel creates a fresh database per game server on demand (many
+> games — Minecraft plugins, etc. — need one). It ships with **Adminer**, a
+> lightweight web tool for browsing and editing those databases. This role is
+> **available but not deployed** until a host is placed in the `mysql` inventory
+> group (Section 10). Its data lives in `/srv/mysql`, and the panel connects to
+> it as the `panel` user (password in `/srv/mysql/secrets/panel_password`). See
+> Section 3a and the role's README for setup.
+
 ### Behind-the-scenes services
 
 | Component | Purpose | How to reach it |
@@ -133,6 +145,37 @@ flowchart TD
 
 > The folders `disk_os`, `disk_pool`, `disk_stripe`, and `run` in the project are
 > empty placeholders that set up nothing. Ignore them.
+
+### 3a. The optional game-server database host (MySQL + Adminer)
+
+This is an **add-on**, deployed only when a host is in the `mysql` inventory
+group. It gives the game panel a real database server so each game server can be
+handed its own database.
+
+| Container | Purpose | Where |
+|---|---|---|
+| **`mysql`** | MariaDB (MySQL) database server — the panel's "Database Host" | `/srv/mysql/data`, port `3306` published on the host |
+| **`mysql-adminer`** | Adminer — web UI to browse/edit databases (modern phpMyAdmin) | fronted by Caddy, e.g. `db.chemicaloutlaws.com` (set it internal-only) |
+
+How it works:
+
+- The database listens on the host's port **3306** so game servers — including
+  ones running on other Wings nodes — can connect to the databases they're
+  given. Pin `mysql_published_address` to a private/WireGuard address to keep it
+  off the public internet.
+- The role creates one management account, **`panel`**, with full privileges.
+  You register it once in the panel under **Admin → Databases → Create New**
+  (Host = the server's address, Port = 3306, Username = `panel`, Password =
+  contents of `/srv/mysql/secrets/panel_password`). After that the panel creates
+  a database and a scoped user for each game server automatically.
+- **Adminer** is the graphical tool for poking at those databases directly. Log
+  in with server `mysql` and either the `panel` user or `root` (passwords under
+  `/srv/mysql/secrets/`). It's published only through Caddy — declare a
+  `caddy_sites` entry pointing at `mysql-adminer:8080` and mark it
+  `internal_only: true`, since it can reach every database.
+
+Deploy or update it with the `mysql` tag (Section 10). Its data and secrets live
+under `/srv/mysql`, so the nightly backup covers it like every other app.
 
 ---
 
@@ -407,9 +450,11 @@ ansible-navigator run site.yml --tags hardening
 ```
 
 Available tags: `update`, `hardening`, `wireguard_client`, `cockpit`, `caddy`,
-`pelican`, `pelican_wings`, `pterodactyl`, `wings`, `wordpress`, `dashy`,
-`glance`, `bracket`, `jellyfin`, `portainer`, `healthchecks`, `borg`. Add
-`--skip-tags update` to skip the OS upgrade. This server runs **Pelican** (tags
+`pelican`, `pelican_wings`, `pterodactyl`, `wings`, `mysql`, `wordpress`,
+`dashy`, `glance`, `bracket`, `jellyfin`, `portainer`, `healthchecks`, `borg`.
+Add `--skip-tags update` to skip the OS upgrade. The `mysql` play (the optional
+game-server database host, Section 3a) is dormant — it does nothing unless a
+host is placed in the `mysql` group. This server runs **Pelican** (tags
 `pelican` and `pelican_wings`); the `pterodactyl` / `wings` plays are dormant —
 they do nothing unless a host is placed in the `pterodactyl_panel` /
 `pterodactyl_wings` groups.
