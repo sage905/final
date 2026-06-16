@@ -12,39 +12,33 @@
   loop: "{{ jellyfin_group_members }}"
   when: jellyfin_group_members | length > 0
 
-- name: Create Jellyfin directories
+- name: Create the Jellyfin data directory
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ jellyfin_data_dir }}"
     state: directory
     owner: "{{ jellyfin_user }}"
     group: "{{ jellyfin_group }}"
     mode: "2775"
-  loop:
-    - "{{ jellyfin_data_dir }}"
-    - "{{ jellyfin_data_dir }}/config"
-    - "{{ jellyfin_data_dir }}/cache"
 
-# Heal ownership left over from prior rootless runs (subuid-mapped UIDs)
-# back to the rootful owner+group with setgid + group-write.
-- name: Normalize ownership of runtime dirs (heals prior-run leftovers)
+# config/ and cache/ are written by the container, which runs as
+# jellyfin_run_uid:jellyfin_run_gid — so they must be owned by that user. The
+# recurse heals ownership left over from when Jellyfin ran as root (or from
+# prior rootless runs) so the non-root process can read/write its state.
+- name: Create and normalize Jellyfin runtime dirs (owned by the run user)
   ansible.builtin.file:
     path: "{{ jellyfin_data_dir }}/{{ item }}"
     state: directory
-    owner: "{{ jellyfin_user }}"
-    group: "{{ jellyfin_group }}"
+    owner: "{{ jellyfin_run_uid }}"
+    group: "{{ jellyfin_run_gid }}"
     mode: "u=rwX,g=rwX,o="
     recurse: true
   loop:
     - config
     - cache
 
-- name: Ensure the media directory exists
-  ansible.builtin.file:
-    path: "{{ jellyfin_media_path }}"
-    state: directory
-    owner: "{{ jellyfin_user }}"
-    group: "{{ jellyfin_group }}"
-    mode: "2775"
+# The media library (jellyfin_media_path) is owned by sage.final.disk_pool —
+# the single source of truth for media-tree ownership and permissions — so this
+# role no longer creates or chowns it.
 
 - name: Render docker-compose.yml
   ansible.builtin.template:

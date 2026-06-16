@@ -19,11 +19,17 @@ radarr_container_port: 7878
 radarr_vpn_container: surfshark
 
 # --- linuxserver.io user mapping ---------------------------------------------
-# The image runs as PUID:PGID and chowns /config to it. Point these at the
-# owner of your media/downloads so Radarr can read and write them.
+# The image runs as PUID:PGID and chowns /config to it. PUID owns the files;
+# PGID should be the shared media group's GID (sage.final.disk_pool's
+# disk_pool_group) so Radarr's writes land in the group the whole media stack
+# shares. The library/downloads tree itself is owned by disk_pool, not here.
 radarr_puid: 1000
 radarr_pgid: 1000
 radarr_timezone: UTC
+
+# Umask for files Radarr creates. 002 keeps new files group-writable so the
+# shared media group can modify them (the other services and SFTP admins).
+radarr_umask: "002"
 
 # --- Library / downloads ------------------------------------------------------
 # Host paths mounted into the container. Media lives under /srv/bulk (large,

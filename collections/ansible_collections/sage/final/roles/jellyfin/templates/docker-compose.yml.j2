@@ -7,6 +7,9 @@ services:
     image: {{ jellyfin_image }}
     container_name: jellyfin
     restart: always
+    # Run as the media library owner:group instead of root, so files Jellyfin
+    # writes into /media stay owned by the human admin and the shared group.
+    user: "{{ jellyfin_run_uid }}:{{ jellyfin_run_gid }}"
     environment:
       JELLYFIN_PublishedServerUrl: "https://{{ jellyfin_fqdn }}"
     volumes:

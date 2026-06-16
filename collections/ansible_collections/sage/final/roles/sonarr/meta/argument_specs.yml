@@ -31,7 +31,15 @@ argument_specs:
       sonarr_pgid:
         type: int
         default: 1000
-        description: linuxserver.io PGID; should own the media/downloads paths.
+        description: >-
+          linuxserver.io PGID; set to the shared media group's GID
+          (sage.final.disk_pool disk_pool_group) so writes land in that group.
+      sonarr_umask:
+        type: str
+        default: "002"
+        description: >-
+          linuxserver.io UMASK. 002 keeps new files group-writable for the
+          shared media group.
       sonarr_timezone:
         type: str
         default: UTC

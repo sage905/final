@@ -1,0 +1,39 @@
+---
+- name: Validate role arguments
+  ansible.builtin.validate_argument_spec:
+    argument_spec: >-
+      {{ (lookup('ansible.builtin.file',
+                 role_path ~ '/meta/argument_specs.yml')
+          | from_yaml)['argument_specs']['main']['options'] }}
+
+- name: Ensure the shared media group exists
+  ansible.builtin.group:
+    name: "{{ disk_pool_group }}"
+    state: present
+
+- name: Ensure the library owner is a member of the shared media group
+  ansible.builtin.user:
+    name: "{{ disk_pool_owner }}"
+    groups: "{{ disk_pool_group }}"
+    append: true
+
+# Non-recursive on purpose: only the pool root and branch roots themselves are
+# normalized, so restrictive siblings (backups/, gamebackups/, lost+found/) are
+# left untouched. The one-time heal play fixes existing library contents.
+- name: Normalize ownership of the pool root and branch roots
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ disk_pool_owner }}"
+    group: "{{ disk_pool_group }}"
+    mode: "{{ disk_pool_dir_mode }}"
+  loop: "{{ [disk_pool_root] + disk_pool_branches }}"
+
+- name: Ensure the shared library directories exist with the right ownership
+  ansible.builtin.file:
+    path: "{{ disk_pool_root }}/{{ item }}"
+    state: directory
+    owner: "{{ disk_pool_owner }}"
+    group: "{{ disk_pool_group }}"
+    mode: "{{ disk_pool_dir_mode }}"
+  loop: "{{ disk_pool_data_dirs }}"

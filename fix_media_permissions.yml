@@ -1,0 +1,45 @@
+---
+# One-time remediation of the EXISTING shared media tree on disk.
+#
+# The roles keep NEW files correct going forward (sage.final.disk_pool owns the
+# tree; the *arr apps run with the shared group + UMASK 002; Jellyfin runs as
+# the library owner instead of root). This play fixes what is already on disk:
+#   - the split group ownership (downloads/ was group 'final', media/ was
+#     group 'jellyfin') -> unify under the shared media group
+#   - the missing group-write on media/ (was 2755)
+#   - any root-owned files Jellyfin wrote while it ran as root
+#
+# Scoped deliberately to media/ and downloads/ ONLY — the sibling backups/,
+# gamebackups/ and lost+found/ under the pool keep their restrictive perms.
+#
+# Run (after deploying site.yml --tags disk_pool,sonarr,radarr,jellyfin):
+#   ansible-navigator run fix_media_permissions.yml --eei ee-demo \
+#     -i inventory/hosts.yml
+- name: Heal shared media tree permissions
+  hosts: disk_pool
+  become: true
+  gather_facts: false
+  vars:
+    heal_owner: final
+    heal_group: jellyfin
+    heal_paths:
+      - /srv/bulk/media
+      - /srv/bulk/downloads
+  tasks:
+    - name: Set owner and group across the shared tree
+      ansible.builtin.command:
+        cmd: "chown -R {{ heal_owner }}:{{ heal_group }} {{ item }}"
+      loop: "{{ heal_paths }}"
+      changed_when: true
+
+    - name: Add group-write to every file and directory
+      ansible.builtin.command:
+        cmd: "chmod -R g+w {{ item }}"
+      loop: "{{ heal_paths }}"
+      changed_when: true
+
+    - name: Set setgid on directories so new files inherit the shared group
+      ansible.builtin.command:
+        cmd: "find {{ item }} -type d -exec chmod g+s {} +"
+      loop: "{{ heal_paths }}"
+      changed_when: true

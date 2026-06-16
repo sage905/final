@@ -16,6 +16,7 @@ services:
     environment:
       PUID: "{{ radarr_puid }}"
       PGID: "{{ radarr_pgid }}"
+      UMASK: "{{ radarr_umask }}"
       TZ: "{{ radarr_timezone }}"
     volumes:
       - "{{ radarr_data_dir }}/config:/config"

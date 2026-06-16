@@ -9,6 +9,7 @@
 #   ansible-navigator run site.yml --tags wings
 #   ansible-navigator run site.yml --tags pelican_wings
 #   ansible-navigator run site.yml --tags mysql
+#   ansible-navigator run site.yml --tags disk_pool
 #   ansible-navigator run site.yml --tags surfshark
 #   ansible-navigator run site.yml --tags sonarr
 #   ansible-navigator run site.yml --tags radarr
@@ -162,6 +163,22 @@
     - mysql
   roles:
     - role: sage.final.mysql
+
+# Shared media storage. One source of truth for ownership and permissions of
+# the library tree (/srv/bulk/{media,downloads} + the /mnt/disk* branches) that
+# Jellyfin, Sonarr and Radarr all read/write. Runs before those app plays so the
+# tree exists with the right owner (final), shared group (jellyfin) and
+# setgid/group-write before any service touches it. Dormant until a host is
+# placed in the `disk_pool` group.
+- name: Provision the shared media storage pool
+  hosts: disk_pool
+  become: true
+  gather_facts: true
+  tags:
+    - disk_pool
+    - storage
+  roles:
+    - role: sage.final.disk_pool
 
 # Surfshark VPN gateway (gluetun) + the *arr apps that route through it. Order
 # matters: the VPN container must be up before Sonarr/Radarr, which join its

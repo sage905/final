@@ -16,6 +16,7 @@ services:
     environment:
       PUID: "{{ sonarr_puid }}"
       PGID: "{{ sonarr_pgid }}"
+      UMASK: "{{ sonarr_umask }}"
       TZ: "{{ sonarr_timezone }}"
     volumes:
       - "{{ sonarr_data_dir }}/config:/config"

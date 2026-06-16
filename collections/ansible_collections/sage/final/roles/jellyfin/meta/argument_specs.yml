@@ -32,6 +32,18 @@ argument_specs:
       jellyfin_user:
         type: str
         default: containers
+      jellyfin_run_uid:
+        type: int
+        default: 1000
+        description: >-
+          UID the Jellyfin process runs as (compose `user:`). Point at the
+          media library owner so library writes are not root-owned.
+      jellyfin_run_gid:
+        type: int
+        default: 1000
+        description: >-
+          GID the Jellyfin process runs as. Set to the shared media group's GID
+          (sage.final.disk_pool disk_pool_group).
       jellyfin_group:
         type: str
         default: jellyfin

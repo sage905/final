@@ -30,19 +30,10 @@
     group: "{{ radarr_pgid }}"
     mode: "0775"
 
-# Media + downloads dirs. Created if missing and owned by the container user so
-# Radarr can write. setgid keeps the group on new files for sharing with the
-# download client / other media apps.
-- name: Ensure library and downloads directories exist
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: "{{ radarr_puid }}"
-    group: "{{ radarr_pgid }}"
-    mode: "2775"
-  loop:
-    - "{{ radarr_movies_path }}"
-    - "{{ radarr_downloads_path }}"
+# The library (radarr_movies_path) and downloads (radarr_downloads_path) tree is
+# owned by sage.final.disk_pool — the single source of truth for media-tree
+# ownership and permissions — so this role no longer creates or chowns it.
+# disk_pool must run before this role (it does in site.yml).
 
 - name: Render docker-compose.yml
   ansible.builtin.template:

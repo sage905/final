@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: disk_pool
+  namespace: sage
+  author: Sage
+  description: Own ownership and permissions of the shared media storage pool.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - storage
+    - media
+    - permissions
+dependencies: []

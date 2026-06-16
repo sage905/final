@@ -19,10 +19,17 @@ jellyfin_shared_network: web
 # this false; set true only to install Docker from this role on a standalone run.
 jellyfin_install_docker: false
 
-# Rootful: stack runs via system Docker. jellyfin_user owns the files
-# on disk. The jellyfin image runs as root inside, so root ownership on
-# the host matches container writes (no `:U` needed).
+# Rootful: stack runs via system Docker. jellyfin_user owns the compose file
+# and the data_dir top on disk.
 jellyfin_user: root
+
+# UID:GID the Jellyfin process runs as inside the container (compose `user:`).
+# Point these at the media library owner + shared media group so anything
+# Jellyfin writes into the library (artwork, trickplay) is owned by that user
+# and group, not root — keeping the human owner's full access intact. config/
+# and cache/ are chowned to match so the non-root process can write them.
+jellyfin_run_uid: 1000
+jellyfin_run_gid: 1000
 
 # Group that owns Jellyfin's files. Admins in jellyfin_group_members can
 # read/write /srv/jellyfin (config, cache, media) via SFTP.

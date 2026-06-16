@@ -1,0 +1,46 @@
+---
+argument_specs:
+  main:
+    short_description: Own ownership and permissions of the shared media storage pool.
+    options:
+      disk_pool_root:
+        type: path
+        default: /srv/bulk
+        description: Top of the (mergerfs) media pool.
+      disk_pool_branches:
+        type: list
+        elements: path
+        default:
+          - /mnt/disk1
+          - /mnt/disk2
+          - /mnt/disk3
+          - /mnt/disk4
+          - /mnt/disk5
+        description: >-
+          Underlying branch mounts of the pool. Their root dirs are normalized
+          (non-recursively) to disk_pool_owner:disk_pool_group.
+      disk_pool_owner:
+        type: str
+        default: final
+        description: >-
+          Library owner (human/SFTP admin). Keeps full access and is added to
+          disk_pool_group.
+      disk_pool_group:
+        type: str
+        default: jellyfin
+        description: Shared group every media service runs with (setgid carrier).
+      disk_pool_dir_mode:
+        type: str
+        default: "2775"
+        description: setgid + group-write so services and admins collaborate.
+      disk_pool_data_dirs:
+        type: list
+        elements: str
+        default:
+          - media
+          - media/tv
+          - media/movies
+          - downloads
+        description: >-
+          Shared library subdirectories created under disk_pool_root. Keep in
+          sync with the app roles' library/downloads paths.

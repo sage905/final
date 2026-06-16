@@ -1,0 +1,37 @@
+---
+# Shared media data tree. The ONE source of truth for ownership and permissions
+# of the library that Jellyfin, Sonarr and Radarr all read/write. The app roles
+# no longer chown these paths themselves — they own only their own config dirs.
+# (Seerr is a frontend with no media mount, so it is not involved here.)
+
+# Top of the (mergerfs) pool and its underlying branch mounts. The pool root and
+# each branch root are normalized to disk_pool_owner:disk_pool_group (the dir
+# itself only, never recursively) so new top-level entries land with the right
+# group; existing siblings such as backups/, gamebackups/ and lost+found/ keep
+# their own deliberately restrictive permissions.
+disk_pool_root: /srv/bulk
+disk_pool_branches:
+  - /mnt/disk1
+  - /mnt/disk2
+  - /mnt/disk3
+  - /mnt/disk4
+  - /mnt/disk5
+
+# Library owner (the human/SFTP admin) and the shared group every media service
+# runs with. The owner keeps full access; the group carries setgid + group-write
+# so all services and admins collaborate on the same files. disk_pool_owner is
+# added to disk_pool_group.
+disk_pool_owner: final
+disk_pool_group: jellyfin
+
+# setgid + rwxrwxr-x. setgid makes new files inherit disk_pool_group; the *arr
+# apps set UMASK 002 and Jellyfin runs as the owner so files stay group-writable.
+disk_pool_dir_mode: "2775"
+
+# Shared library subdirectories created and owned under disk_pool_root. Keep in
+# sync with the app roles' *_tv_path / *_movies_path / *_downloads_path.
+disk_pool_data_dirs:
+  - media
+  - media/tv
+  - media/movies
+  - downloads
