@@ -137,10 +137,11 @@ flowchart TD
 > `sage.final.sonarr` (TV) / `sage.final.radarr` (movies) run *inside* the VPN
 > container's network so they have **no way to reach the internet except through
 > the tunnel** (if the VPN drops, their traffic stops — a built-in kill switch).
-> These are **available but not deployed** until hosts are placed in the
-> `surfshark`, `sonarr`, and `radarr` inventory groups. Data lives in
-> `/srv/surfshark`, `/srv/sonarr`, `/srv/radarr`; media lands in `/srv/bulk`
-> (not backed up). See Section 3b and the roles' READMEs for setup.
+> `sage.final.seerr` adds a friendly request/discovery frontend on top. These are
+> **available but not deployed** until hosts are placed in the `surfshark`,
+> `sonarr`, `radarr`, and `seerr` inventory groups. Data lives in
+> `/srv/surfshark`, `/srv/sonarr`, `/srv/radarr`, `/srv/seerr`; media lands in
+> `/srv/bulk` (not backed up). See Section 3b and the roles' READMEs for setup.
 
 ### Behind-the-scenes services
 
@@ -191,14 +192,32 @@ under `/srv/mysql`, so the nightly backup covers it like every other app.
 ### 3b. The optional media stack behind a VPN (Sonarr + Radarr + Surfshark)
 
 This is an **add-on**, deployed only when hosts are in the `surfshark`, `sonarr`,
-and `radarr` inventory groups. It runs the popular "*arr*" media automation apps
-with all their traffic forced through a Surfshark VPN.
+`radarr`, and `seerr` inventory groups. It runs the popular "*arr*" media
+automation apps with all their traffic forced through a Surfshark VPN, plus a
+request frontend.
 
 | Container | Purpose | Where |
 |---|---|---|
 | **`surfshark`** | VPN gateway (kill switch + DNS); the others route through it | `/srv/surfshark` |
 | **`sonarr`** | Watches for and organises **TV** episodes | `/srv/sonarr`, library in `/srv/bulk/media/tv` |
 | **`radarr`** | Watches for and organises **movies** | `/srv/radarr`, library in `/srv/bulk/media/movies` |
+| **`seerr`** | Request & discovery frontend — users ask for movies/TV here | `/srv/seerr` |
+
+[Seerr](https://seerr.dev/) (the unified successor to Overseerr/Jellyseerr) is
+the friendly front page of this stack: people sign in with their Jellyfin
+account, browse, and click "Request". Seerr passes the request to Radarr/Sonarr
+to fetch, and it shows up in Jellyfin when ready. Unlike Sonarr/Radarr, Seerr is
+**not** behind the VPN by default — it's a frontend that needs to be reachable
+and only talks to Jellyfin and a metadata service. Caddy points straight at
+`seerr:5055`:
+
+```yaml
+caddy_sites:
+  - { fqdn: "requests.chemicaloutlaws.com", upstream: "seerr:5055" }
+```
+
+(You *can* route Seerr through the VPN too by setting `seerr_vpn_container:
+surfshark`, but it isn't necessary.)
 
 How the VPN enforcement works (the important part):
 
@@ -239,7 +258,8 @@ To check the VPN is actually working:
 sudo docker exec surfshark wget -qO- https://ipinfo.io/ip   # should show a Surfshark IP, not yours
 ```
 
-Deploy or update with the `surfshark`, `sonarr`, and `radarr` tags (Section 10).
+Deploy or update with the `surfshark`, `sonarr`, `radarr`, and `seerr` tags
+(Section 10).
 
 ---
 
@@ -515,11 +535,11 @@ ansible-navigator run site.yml --tags hardening
 
 Available tags: `update`, `hardening`, `wireguard_client`, `cockpit`, `caddy`,
 `pelican`, `pelican_wings`, `pterodactyl`, `wings`, `mysql`, `surfshark`,
-`sonarr`, `radarr`, `wordpress`, `dashy`, `glance`, `bracket`, `jellyfin`,
-`portainer`, `healthchecks`, `borg`. Add `--skip-tags update` to skip the OS
-upgrade. The `mysql` play (the optional game-server database host, Section 3a)
-and the `surfshark` / `sonarr` / `radarr` plays (the optional media stack,
-Section 3b) are dormant — they do nothing unless a host is placed in their
+`sonarr`, `radarr`, `seerr`, `wordpress`, `dashy`, `glance`, `bracket`,
+`jellyfin`, `portainer`, `healthchecks`, `borg`. Add `--skip-tags update` to skip
+the OS upgrade. The `mysql` play (the optional game-server database host, Section
+3a) and the `surfshark` / `sonarr` / `radarr` / `seerr` plays (the optional media
+stack, Section 3b) are dormant — they do nothing unless a host is placed in their
 groups. This server runs **Pelican** (tags
 `pelican` and `pelican_wings`); the `pterodactyl` / `wings` plays are dormant —
 they do nothing unless a host is placed in the `pterodactyl_panel` /

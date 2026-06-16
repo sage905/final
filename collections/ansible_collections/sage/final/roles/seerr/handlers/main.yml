@@ -1,0 +1,6 @@
+---
+- name: Recreate seerr stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ seerr_data_dir }}"
+  changed_when: true

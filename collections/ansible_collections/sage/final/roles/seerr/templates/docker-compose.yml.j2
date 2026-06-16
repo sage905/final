@@ -1,0 +1,43 @@
+---
+# {{ ansible_managed }}
+name: seerr
+
+services:
+  seerr:
+    image: {{ seerr_image }}
+    container_name: {{ seerr_container_name }}
+    # `init` reaps zombie processes from the Node app (recommended upstream).
+    init: true
+    restart: always
+{% if seerr_vpn_container | length > 0 %}
+    # Optional: route all traffic through the VPN gateway, like Sonarr/Radarr.
+    # No `networks:`/`ports:` allowed in this mode — the UI ({{ seerr_container_port }})
+    # is reached through the VPN container's name.
+    network_mode: "container:{{ seerr_vpn_container }}"
+{% endif %}
+    environment:
+      LOG_LEVEL: "{{ seerr_log_level }}"
+      TZ: "{{ seerr_timezone }}"
+      PORT: "{{ seerr_container_port }}"
+    volumes:
+      - "{{ seerr_data_dir }}/config:/app/config"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget --no-verbose --tries=1 --spider
+          http://localhost:{{ seerr_container_port }}/api/v1/settings/public
+          || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
+{% if seerr_vpn_container | length == 0 %}
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ seerr_shared_network }}
+    external: true
+{% endif %}

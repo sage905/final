@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: seerr
+  namespace: sage
+  author: Sage
+  description: >-
+    Run Seerr (the unified Overseerr/Jellyseerr successor) as a media request &
+    discovery frontend driving Sonarr/Radarr behind the Surfshark VPN.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - seerr
+    - overseerr
+    - jellyseerr
+    - media
+    - docker
+dependencies: []

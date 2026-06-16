@@ -1,0 +1,49 @@
+---
+# --- Stack location -----------------------------------------------------------
+seerr_data_dir: /srv/seerr
+
+# --- Image --------------------------------------------------------------------
+# Seerr (seerr.dev) is the unified successor to Overseerr and Jellyseerr — a
+# request & discovery frontend that talks to the media server (Jellyfin here)
+# and to Sonarr/Radarr to fulfil requests. Overseerr/Jellyseerr are deprecated
+# in its favour.
+seerr_image: ghcr.io/seerr-team/seerr:latest
+seerr_container_name: seerr
+seerr_container_port: 5055
+
+# --- VPN routing (optional) --------------------------------------------------
+# Empty (default) = run on the shared `web` network with its own address. This
+# is the standard setup: Seerr is a frontend, not a downloader — it needs to be
+# reachable and to talk to Jellyfin, and its only outbound traffic is to a
+# metadata API (TMDB). It reaches Sonarr/Radarr at the VPN container's name
+# (e.g. surfshark:8989 / surfshark:7878).
+#
+# Set this to the VPN gateway container name (e.g. "surfshark") to force ALL of
+# Seerr's traffic through the VPN as well, like Sonarr/Radarr. If you do, add
+# {{ seerr_container_port }} to the VPN role's surfshark_input_ports and point
+# Caddy at "<vpn>:{{ seerr_container_port }}".
+seerr_vpn_container: ""
+
+# --- App settings ------------------------------------------------------------
+seerr_log_level: info
+seerr_timezone: UTC
+
+# --- Shared network (provided by sage.final.caddy) ----------------------------
+# Used only when seerr_vpn_container is empty.
+seerr_shared_network: web
+
+# --- Container runtime install ------------------------------------------------
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+seerr_install_docker: false
+
+# Rootful: stack runs via system Docker. seerr_user owns the files on disk. The
+# official Seerr image (unlike linuxserver images) has no PUID/PGID — it runs as
+# its own user and writes /app/config; root ownership on the host matches what
+# the container writes through the bind mount.
+seerr_user: root
+
+# Group that owns the stack's files on the host. Admins in seerr_group_members
+# can read/write {{ seerr_data_dir }} top-level files (compose) via SFTP.
+seerr_group: seerr
+seerr_group_members: []

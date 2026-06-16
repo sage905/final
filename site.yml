@@ -12,6 +12,7 @@
 #   ansible-navigator run site.yml --tags surfshark
 #   ansible-navigator run site.yml --tags sonarr
 #   ansible-navigator run site.yml --tags radarr
+#   ansible-navigator run site.yml --tags seerr
 #   ansible-navigator run site.yml --tags wordpress
 #   ansible-navigator run site.yml --tags dashy
 #   ansible-navigator run site.yml --tags glance
@@ -79,6 +80,7 @@
     - surfshark
     - sonarr
     - radarr
+    - seerr
     - wordpress
     - pelican_wings
     - pterodactyl_wings
@@ -191,6 +193,18 @@
     - radarr
   roles:
     - role: sage.final.radarr
+
+# Seerr — the request/discovery frontend for the media stack. Runs on the shared
+# network by default (it's a frontend, not a downloader); set seerr_vpn_container
+# to route it through the VPN too. Dormant until a host is in the `seerr` group.
+- name: Deploy Seerr (media request frontend)
+  hosts: seerr
+  become: true
+  gather_facts: true
+  tags:
+    - seerr
+  roles:
+    - role: sage.final.seerr
 
 - name: Deploy WordPress
   hosts: wordpress

@@ -36,6 +36,11 @@ project is not yet versioned, so entries are grouped under **Unreleased**.
     is up first and self-heals the namespace coupling if the VPN container was
     recreated. Caddy fronts their UIs via the VPN container
     (`surfshark:8989` / `surfshark:7878`).
+  - `sage.final.seerr` runs [Seerr](https://seerr.dev/) (the unified successor to
+    Overseerr/Jellyseerr) as the request & discovery frontend that drives
+    Sonarr/Radarr and reads the Jellyfin library. Runs on the shared `web`
+    network by default (it's a frontend, not a downloader); `seerr_vpn_container`
+    optionally routes it through the VPN too.
 - **MySQL database-host role** (`sage.final.mysql`) — runs a dedicated MariaDB
   container as a Docker Compose stack to serve as the panel's "Database Host",
   provisioning a database per game server. Creates a global-privilege `panel`

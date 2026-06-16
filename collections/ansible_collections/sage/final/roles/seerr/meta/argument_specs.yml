@@ -1,0 +1,56 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy Seerr (media request & discovery frontend).
+    options:
+      seerr_data_dir:
+        type: path
+        default: /srv/seerr
+      seerr_image:
+        type: str
+        default: ghcr.io/seerr-team/seerr:latest
+      seerr_container_name:
+        type: str
+        default: seerr
+      seerr_container_port:
+        type: int
+        default: 5055
+        description: >-
+          Web UI port. When seerr_vpn_container is set, this is reached via the
+          VPN container's name and must be in surfshark_input_ports.
+      seerr_vpn_container:
+        type: str
+        default: ""
+        description: >-
+          Empty = run on the shared network with its own address (standard).
+          Set to the VPN gateway container name to route all traffic through the
+          VPN, like Sonarr/Radarr.
+      seerr_log_level:
+        type: str
+        default: info
+        choices: [debug, info, warn, error]
+      seerr_timezone:
+        type: str
+        default: UTC
+      seerr_shared_network:
+        type: str
+        default: web
+        description: >-
+          External Docker network shared with the caddy role. Used only when
+          seerr_vpn_container is empty.
+      seerr_install_docker:
+        type: bool
+        default: false
+      seerr_user:
+        type: str
+        default: root
+      seerr_group:
+        type: str
+        default: seerr
+      seerr_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to seerr_group. Listed users must
+          already exist on the host.

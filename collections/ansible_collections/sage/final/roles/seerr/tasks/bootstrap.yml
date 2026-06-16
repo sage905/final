@@ -1,0 +1,63 @@
+---
+# Default deployment: Seerr has its own address on the shared network.
+- name: Ensure the shared Docker network exists
+  ansible.builtin.command:
+    cmd: "docker network create {{ seerr_shared_network }}"
+  register: seerr_network_result
+  changed_when: seerr_network_result.rc == 0
+  failed_when:
+    - seerr_network_result.rc != 0
+    - "'already exists' not in seerr_network_result.stderr"
+  when: seerr_vpn_container | length == 0
+
+# Optional VPN routing: Seerr joins the VPN container's namespace, which must
+# therefore exist and be running first (same model as Sonarr/Radarr).
+- name: Get the VPN gateway container state
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Running{{ "}}" }}'
+      {{ seerr_vpn_container }}
+  register: seerr_vpn_state
+  changed_when: false
+  failed_when: false
+  when: seerr_vpn_container | length > 0
+
+- name: Assert the VPN gateway is running
+  ansible.builtin.assert:
+    that:
+      - seerr_vpn_state.stdout == 'true'
+    fail_msg: >-
+      seerr_vpn_container is set to '{{ seerr_vpn_container }}' but that
+      container is not running. Deploy sage.final.surfshark first
+      (--tags surfshark).
+  when: seerr_vpn_container | length > 0
+
+- name: Bring up the Seerr stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --remove-orphans
+    chdir: "{{ seerr_data_dir }}"
+  register: seerr_compose_result
+  changed_when: "'Creating' in seerr_compose_result.stdout
+                 or 'Recreating' in seerr_compose_result.stdout
+                 or 'Started' in seerr_compose_result.stderr"
+
+# If routed through the VPN and that container was recreated, Seerr is bound to a
+# namespace that no longer exists and is stuck restarting — re-attach it.
+- name: Check the Seerr container status
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Status{{ "}}" }}'
+      {{ seerr_container_name }}
+  register: seerr_status
+  changed_when: false
+  failed_when: false
+  when: seerr_vpn_container | length > 0
+
+- name: Re-attach Seerr to the current VPN namespace
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ seerr_data_dir }}"
+  when:
+    - seerr_vpn_container | length > 0
+    - seerr_status.stdout != 'running'
+  changed_when: true

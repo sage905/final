@@ -107,20 +107,23 @@ uses to hand each game server its own database. Its passwords live in
 `/srv/mysql/secrets/`.
 
 And if the optional **media-behind-VPN** stack is deployed (hosts in the
-`surfshark`, `sonarr`, `radarr` groups), three more appear:
+`surfshark`, `sonarr`, `radarr`, `seerr` groups), these appear:
 
 | Container | App it runs |
 |---|---|
 | `surfshark` | Surfshark VPN gateway — the others send all traffic through it |
 | `sonarr` | TV-series automation, **routed through `surfshark`** |
 | `radarr` | Movie automation, **routed through `surfshark`** |
+| `seerr` | Request/discovery frontend (users ask for media here) — **not** behind the VPN |
 
 `sonarr` and `radarr` are special: they have **no network of their own** — they
 borrow `surfshark`'s. So their web UIs are reached *through* the VPN container
 (`surfshark:8989` and `surfshark:7878`), and if you ever recreate `surfshark`
 you must recreate them too (see §7). Verify the VPN is working with
 `sudo docker exec surfshark wget -qO- https://ipinfo.io/ip` — it should print a
-Surfshark IP, not your own.
+Surfshark IP, not your own. `seerr` is an ordinary container on the `web` network
+(reached at `seerr:5055`); it talks to Sonarr/Radarr via the VPN container's
+name.
 
 ---
 
