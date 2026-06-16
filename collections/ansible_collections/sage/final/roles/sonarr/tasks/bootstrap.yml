@@ -1,0 +1,49 @@
+---
+# Sonarr has no network of its own — it joins the VPN container's namespace. So
+# that container must exist and be running before Sonarr can start.
+- name: Get the VPN gateway container state
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Running{{ "}}" }}'
+      {{ sonarr_vpn_container }}
+  register: sonarr_vpn_state
+  changed_when: false
+  failed_when: false
+
+- name: Assert the VPN gateway is running
+  ansible.builtin.assert:
+    that:
+      - sonarr_vpn_state.stdout == 'true'
+    fail_msg: >-
+      The VPN container '{{ sonarr_vpn_container }}' is not running. Deploy
+      sage.final.surfshark first (e.g. --tags surfshark) — Sonarr routes all
+      its traffic through it and cannot start without it.
+
+- name: Bring up the Sonarr stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --remove-orphans
+    chdir: "{{ sonarr_data_dir }}"
+  register: sonarr_compose_result
+  changed_when: "'Creating' in sonarr_compose_result.stdout
+                 or 'Recreating' in sonarr_compose_result.stdout
+                 or 'Started' in sonarr_compose_result.stderr"
+
+# If the VPN container was recreated since Sonarr last started, Sonarr is now
+# bound to a network namespace that no longer exists and is stuck restarting.
+# `up -d` won't fix that on its own, so force-recreate it to rejoin the current
+# VPN namespace.
+- name: Check the Sonarr container status
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Status{{ "}}" }}'
+      {{ sonarr_container_name }}
+  register: sonarr_status
+  changed_when: false
+  failed_when: false
+
+- name: Re-attach Sonarr to the current VPN namespace
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ sonarr_data_dir }}"
+  when: sonarr_status.stdout != 'running'
+  changed_when: true

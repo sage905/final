@@ -1,0 +1,21 @@
+---
+- name: Validate role arguments
+  ansible.builtin.validate_argument_spec:
+    argument_spec: >-
+      {{ (lookup('ansible.builtin.file',
+                 role_path ~ '/meta/argument_specs.yml')
+          | from_yaml)['argument_specs']['main']['options'] }}
+
+- name: "Look up the {{ radarr_user }} UID"
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ radarr_user }}"
+
+- name: Install container runtime and prerequisites
+  ansible.builtin.import_tasks: dependencies.yml
+
+- name: Render the compose project
+  ansible.builtin.import_tasks: install.yml
+
+- name: Bring the stack up behind the VPN
+  ansible.builtin.import_tasks: bootstrap.yml

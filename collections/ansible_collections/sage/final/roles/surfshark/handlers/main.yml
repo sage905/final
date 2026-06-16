@@ -1,0 +1,6 @@
+---
+- name: Recreate surfshark stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ surfshark_data_dir }}"
+  changed_when: true

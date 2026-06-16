@@ -1,0 +1,53 @@
+---
+# {{ ansible_managed }}
+name: surfshark
+
+services:
+  surfshark:
+    image: {{ surfshark_image }}
+    container_name: {{ surfshark_container_name }}
+    restart: always
+    # NET_ADMIN + the tun device are required to bring up the VPN interface and
+    # program the kill-switch firewall rules inside the container.
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      VPN_SERVICE_PROVIDER: surfshark
+      VPN_TYPE: "{{ surfshark_vpn_type }}"
+{% if surfshark_vpn_type == 'openvpn' %}
+      OPENVPN_USER: "{{ surfshark_openvpn_user }}"
+      OPENVPN_PASSWORD: "{{ surfshark_openvpn_password }}"
+{% else %}
+      WIREGUARD_PRIVATE_KEY: "{{ surfshark_wireguard_private_key }}"
+      WIREGUARD_ADDRESSES: "{{ surfshark_wireguard_addresses }}"
+{% endif %}
+      SERVER_COUNTRIES: "{{ surfshark_server_countries }}"
+{% if surfshark_server_cities | length > 0 %}
+      SERVER_CITIES: "{{ surfshark_server_cities }}"
+{% endif %}
+      # Kill switch: only these subnets may be reached without the tunnel; every
+      # other destination is forced through the VPN or dropped.
+      FIREWALL_OUTBOUND_SUBNETS: "{{ surfshark_firewall_outbound_subnets }}"
+      # Open the listening ports of the apps that share this namespace so Caddy
+      # can reach their UIs.
+      FIREWALL_INPUT_PORTS: "{{ surfshark_input_ports }}"
+      TZ: "{{ surfshark_timezone }}"
+    volumes:
+      - "{{ surfshark_data_dir }}/config:/gluetun"
+{% if surfshark_published_ports | length > 0 %}
+    # Ports listened on by the apps sharing this container's namespace must be
+    # published HERE, not on the app containers themselves.
+    ports:
+{% for p in surfshark_published_ports %}
+      - "{{ p }}"
+{% endfor %}
+{% endif %}
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ surfshark_shared_network }}
+    external: true

@@ -1,0 +1,48 @@
+---
+# --- Stack location -----------------------------------------------------------
+radarr_data_dir: /srv/radarr
+
+# --- Image --------------------------------------------------------------------
+radarr_image: lscr.io/linuxserver/radarr:latest
+radarr_container_name: radarr
+
+# Port Radarr's web UI listens on. Because Radarr shares the VPN container's
+# network namespace, this port is reached via the VPN container's name
+# (Caddy upstream "{{ radarr_vpn_container }}:{{ radarr_container_port }}"), and
+# it must be listed in the VPN role's surfshark_input_ports.
+radarr_container_port: 7878
+
+# --- VPN routing (the whole point) -------------------------------------------
+# Name of the VPN gateway container (sage.final.surfshark) whose network
+# namespace Radarr joins. Radarr gets NO network of its own — all its traffic
+# exits through this container's VPN tunnel, or not at all (kill switch).
+radarr_vpn_container: surfshark
+
+# --- linuxserver.io user mapping ---------------------------------------------
+# The image runs as PUID:PGID and chowns /config to it. Point these at the
+# owner of your media/downloads so Radarr can read and write them.
+radarr_puid: 1000
+radarr_pgid: 1000
+radarr_timezone: UTC
+
+# --- Library / downloads ------------------------------------------------------
+# Host paths mounted into the container. Media lives under /srv/bulk (large,
+# replaceable, excluded from backups) alongside the other media apps. Radarr
+# and your download client should share the SAME downloads path (identical on
+# both sides) so completed-download imports are hardlinks, not slow copies.
+radarr_movies_path: /srv/bulk/media/movies
+radarr_downloads_path: /srv/bulk/downloads
+
+# --- Container runtime install ------------------------------------------------
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+radarr_install_docker: false
+
+# Rootful: stack runs via system Docker. radarr_user owns the compose file on
+# disk; /config inside is owned by radarr_puid:radarr_pgid.
+radarr_user: root
+
+# Group that owns the stack's files on the host. Admins in radarr_group_members
+# can read/write {{ radarr_data_dir }} via SFTP.
+radarr_group: radarr
+radarr_group_members: []

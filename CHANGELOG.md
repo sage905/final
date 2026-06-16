@@ -25,6 +25,17 @@ project is not yet versioned, so entries are grouped under **Unreleased**.
   Pterodactyl→Pelican migration. (`3e1bdb0`)
 
 ### Added
+- **Media stack behind a VPN** — three new roles wired into `site.yml`:
+  - `sage.final.surfshark` runs a **Surfshark VPN gateway** (gluetun configured
+    for the Surfshark provider) with a kill switch, DNS-over-TLS, and a
+    healthcheck. It joins the shared `web` network and opens the *arr UI ports
+    on its firewall (`surfshark_input_ports`).
+  - `sage.final.sonarr` and `sage.final.radarr` (linuxserver.io images) run with
+    `network_mode: "container:surfshark"`, so **all their traffic exits only
+    through the VPN** — no leak path. Their bootstrap asserts the VPN container
+    is up first and self-heals the namespace coupling if the VPN container was
+    recreated. Caddy fronts their UIs via the VPN container
+    (`surfshark:8989` / `surfshark:7878`).
 - **MySQL database-host role** (`sage.final.mysql`) — runs a dedicated MariaDB
   container as a Docker Compose stack to serve as the panel's "Database Host",
   provisioning a database per game server. Creates a global-privilege `panel`

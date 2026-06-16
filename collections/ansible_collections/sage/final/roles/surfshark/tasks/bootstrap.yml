@@ -1,0 +1,57 @@
+---
+- name: Ensure the shared Docker network exists
+  ansible.builtin.command:
+    cmd: "docker network create {{ surfshark_shared_network }}"
+  register: surfshark_network_result
+  changed_when: surfshark_network_result.rc == 0
+  failed_when:
+    - surfshark_network_result.rc != 0
+    - "'already exists' not in surfshark_network_result.stderr"
+
+- name: Pull the gluetun image
+  ansible.builtin.command:
+    cmd: docker compose pull
+    chdir: "{{ surfshark_data_dir }}"
+  register: surfshark_pull_result
+  changed_when: >-
+    'Trying to pull' in surfshark_pull_result.stdout
+    or 'Pulling' in surfshark_pull_result.stderr
+    or 'Writing manifest' in surfshark_pull_result.stderr
+  timeout: 600
+
+- name: Bring the VPN gateway up
+  ansible.builtin.command:
+    cmd: docker compose up -d --remove-orphans
+    chdir: "{{ surfshark_data_dir }}"
+  register: surfshark_compose_result
+  changed_when: "'Creating' in surfshark_compose_result.stdout
+                 or 'Recreating' in surfshark_compose_result.stdout
+                 or 'Started' in surfshark_compose_result.stderr"
+
+- name: Wait for the VPN tunnel to come up (container reports healthy)
+  block:
+    - name: Poll gluetun health until healthy
+      ansible.builtin.command:
+        cmd: >-
+          docker inspect -f '{{ "{{" }}.State.Health.Status{{ "}}" }}'
+          {{ surfshark_container_name }}
+      register: surfshark_health
+      retries: 30
+      delay: 10
+      until: surfshark_health.stdout == 'healthy'
+      changed_when: false
+  rescue:
+    - name: Dump gluetun logs for diagnosis
+      ansible.builtin.command:
+        cmd: docker logs --tail 100 {{ surfshark_container_name }}
+      register: surfshark_logs
+      changed_when: false
+      failed_when: false
+    - name: Show the last 100 lines of gluetun logs
+      ansible.builtin.debug:
+        msg: "{{ surfshark_logs.stdout_lines }}"
+    - name: Fail after dumping logs
+      ansible.builtin.fail:
+        msg: >-
+          The Surfshark/gluetun tunnel never became healthy. Check the
+          credentials and server selection in the logs printed above.

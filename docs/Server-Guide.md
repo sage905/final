@@ -131,6 +131,17 @@ flowchart TD
 > it as the `panel` user (password in `/srv/mysql/secrets/panel_password`). See
 > Section 3a and the role's README for setup.
 
+> **Optional — media automation behind a VPN (Sonarr + Radarr + Surfshark).**
+> Three more roles add a media-grabbing stack whose internet traffic is forced
+> through a **Surfshark VPN**: `sage.final.surfshark` runs the VPN gateway, and
+> `sage.final.sonarr` (TV) / `sage.final.radarr` (movies) run *inside* the VPN
+> container's network so they have **no way to reach the internet except through
+> the tunnel** (if the VPN drops, their traffic stops — a built-in kill switch).
+> These are **available but not deployed** until hosts are placed in the
+> `surfshark`, `sonarr`, and `radarr` inventory groups. Data lives in
+> `/srv/surfshark`, `/srv/sonarr`, `/srv/radarr`; media lands in `/srv/bulk`
+> (not backed up). See Section 3b and the roles' READMEs for setup.
+
 ### Behind-the-scenes services
 
 | Component | Purpose | How to reach it |
@@ -176,6 +187,59 @@ How it works:
 
 Deploy or update it with the `mysql` tag (Section 10). Its data and secrets live
 under `/srv/mysql`, so the nightly backup covers it like every other app.
+
+### 3b. The optional media stack behind a VPN (Sonarr + Radarr + Surfshark)
+
+This is an **add-on**, deployed only when hosts are in the `surfshark`, `sonarr`,
+and `radarr` inventory groups. It runs the popular "*arr*" media automation apps
+with all their traffic forced through a Surfshark VPN.
+
+| Container | Purpose | Where |
+|---|---|---|
+| **`surfshark`** | VPN gateway (kill switch + DNS); the others route through it | `/srv/surfshark` |
+| **`sonarr`** | Watches for and organises **TV** episodes | `/srv/sonarr`, library in `/srv/bulk/media/tv` |
+| **`radarr`** | Watches for and organises **movies** | `/srv/radarr`, library in `/srv/bulk/media/movies` |
+
+How the VPN enforcement works (the important part):
+
+- `sonarr` and `radarr` are started with their network **provided by the
+  `surfshark` container** (Docker's `network_mode: "container:surfshark"`). They
+  have no network card of their own, so the *only* way out is the VPN tunnel. If
+  the VPN container is down, they have no internet at all — they cannot leak your
+  real IP. This is the whole point of the design.
+- Because their network belongs to the VPN container, **their web pages are
+  served through it**: Caddy points at `surfshark:8989` (Sonarr) and
+  `surfshark:7878` (Radarr), not at the app names. Set these up in `caddy_sites`
+  and mark them `internal_only: true`:
+
+  ```yaml
+  caddy_sites:
+    - { fqdn: "sonarr.chemicaloutlaws.com", upstream: "surfshark:8989", internal_only: true }
+    - { fqdn: "radarr.chemicaloutlaws.com", upstream: "surfshark:7878", internal_only: true }
+  ```
+
+- **Surfshark credentials** are required. Put your Surfshark *service*
+  credentials (from the Surfshark dashboard → Manual setup, **not** your normal
+  login) into inventory as `surfshark_openvpn_user` / `surfshark_openvpn_password`,
+  encrypted with Ansible Vault.
+
+Two operational gotchas worth knowing:
+
+- **Order matters.** The VPN must be up before the apps. The playbook deploys
+  them in the right order (`surfshark` → `sonarr` → `radarr`).
+- **Recreating the VPN breaks the apps' network.** If the `surfshark` container
+  is replaced (e.g. an image update), Sonarr/Radarr lose their network and get
+  stuck restarting. Fix it by re-running their tags (`--tags sonarr,radarr`) —
+  the roles detect this and re-attach them — or manually:
+  `cd /srv/sonarr && sudo docker compose up -d --force-recreate`.
+
+To check the VPN is actually working:
+
+```bash
+sudo docker exec surfshark wget -qO- https://ipinfo.io/ip   # should show a Surfshark IP, not yours
+```
+
+Deploy or update with the `surfshark`, `sonarr`, and `radarr` tags (Section 10).
 
 ---
 
@@ -450,11 +514,13 @@ ansible-navigator run site.yml --tags hardening
 ```
 
 Available tags: `update`, `hardening`, `wireguard_client`, `cockpit`, `caddy`,
-`pelican`, `pelican_wings`, `pterodactyl`, `wings`, `mysql`, `wordpress`,
-`dashy`, `glance`, `bracket`, `jellyfin`, `portainer`, `healthchecks`, `borg`.
-Add `--skip-tags update` to skip the OS upgrade. The `mysql` play (the optional
-game-server database host, Section 3a) is dormant — it does nothing unless a
-host is placed in the `mysql` group. This server runs **Pelican** (tags
+`pelican`, `pelican_wings`, `pterodactyl`, `wings`, `mysql`, `surfshark`,
+`sonarr`, `radarr`, `wordpress`, `dashy`, `glance`, `bracket`, `jellyfin`,
+`portainer`, `healthchecks`, `borg`. Add `--skip-tags update` to skip the OS
+upgrade. The `mysql` play (the optional game-server database host, Section 3a)
+and the `surfshark` / `sonarr` / `radarr` plays (the optional media stack,
+Section 3b) are dormant — they do nothing unless a host is placed in their
+groups. This server runs **Pelican** (tags
 `pelican` and `pelican_wings`); the `pterodactyl` / `wings` plays are dormant —
 they do nothing unless a host is placed in the `pterodactyl_panel` /
 `pterodactyl_wings` groups.

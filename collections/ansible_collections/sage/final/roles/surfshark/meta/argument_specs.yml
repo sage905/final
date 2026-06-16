@@ -1,0 +1,78 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy a Surfshark (gluetun) VPN gateway container.
+    options:
+      surfshark_data_dir:
+        type: path
+        default: /srv/surfshark
+        description: Host directory holding the compose project and gluetun state.
+      surfshark_image:
+        type: str
+        default: docker.io/qmcgaw/gluetun:latest
+        description: gluetun image (configured for the Surfshark provider).
+      surfshark_container_name:
+        type: str
+        default: surfshark
+        description: >-
+          Container name. Apps route through it with
+          network_mode "container:<this>".
+      surfshark_vpn_type:
+        type: str
+        default: openvpn
+        choices: [openvpn, wireguard]
+      # surfshark_openvpn_user / _password and surfshark_wireguard_private_key /
+      # _addresses are vault-prone credentials and intentionally NOT in this
+      # spec (validate_argument_spec rejects AnsibleVaultEncryptedUnicode). They
+      # default to "" in defaults/main.yml and are asserted in install.yml.
+      surfshark_server_countries:
+        type: str
+        default: Netherlands
+        description: Comma-separated country names for the VPN exit (gluetun syntax).
+      surfshark_server_cities:
+        type: str
+        default: ""
+        description: Optional comma-separated cities to narrow server selection.
+      surfshark_firewall_outbound_subnets:
+        type: str
+        default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+        description: >-
+          Subnets reachable outside the tunnel (must include the Docker subnet
+          so Caddy can reach the app UIs). Everything else is forced through the
+          VPN — the kill switch.
+      surfshark_input_ports:
+        type: str
+        default: "8989,7878"
+        description: >-
+          Comma-separated inbound ports gluetun's firewall accepts — the
+          listening ports of every app that joins this container's namespace.
+      surfshark_published_ports:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Optional host port publishes (e.g. "8989:8989") for the apps sharing
+          this namespace. Usually empty — UIs are reached via Caddy.
+      surfshark_timezone:
+        type: str
+        default: UTC
+      surfshark_shared_network:
+        type: str
+        default: web
+        description: External Docker network shared with the caddy role.
+      surfshark_install_docker:
+        type: bool
+        default: false
+      surfshark_user:
+        type: str
+        default: root
+      surfshark_group:
+        type: str
+        default: surfshark
+      surfshark_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to surfshark_group. Listed users must
+          already exist on the host.

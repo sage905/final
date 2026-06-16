@@ -106,6 +106,22 @@ Unlike the per-app `-db` helpers above, `mysql` is a *shared* database the panel
 uses to hand each game server its own database. Its passwords live in
 `/srv/mysql/secrets/`.
 
+And if the optional **media-behind-VPN** stack is deployed (hosts in the
+`surfshark`, `sonarr`, `radarr` groups), three more appear:
+
+| Container | App it runs |
+|---|---|
+| `surfshark` | Surfshark VPN gateway — the others send all traffic through it |
+| `sonarr` | TV-series automation, **routed through `surfshark`** |
+| `radarr` | Movie automation, **routed through `surfshark`** |
+
+`sonarr` and `radarr` are special: they have **no network of their own** — they
+borrow `surfshark`'s. So their web UIs are reached *through* the VPN container
+(`surfshark:8989` and `surfshark:7878`), and if you ever recreate `surfshark`
+you must recreate them too (see §7). Verify the VPN is working with
+`sudo docker exec surfshark wget -qO- https://ipinfo.io/ip` — it should print a
+Surfshark IP, not your own.
+
 ---
 
 ## 3. The four everyday commands
@@ -262,6 +278,12 @@ user and get "permission denied", that's why — reconnect with `-u root`.
 From inside `wordpress` you can't see `jellyfin`'s files or processes. They reach
 each other only over the shared network, by container name (e.g. WordPress
 reaches its database at the host name `wordpress-db`).
+
+> **One deliberate exception:** if the media-behind-VPN stack is deployed,
+> `sonarr` and `radarr` *share* the `surfshark` container's network (not their
+> files — just the network). That's how their traffic is forced through the VPN.
+> Practically, this means they have no IP of their own, can't be given their own
+> `ports:`, and must be recreated whenever `surfshark` is.
 
 **Rule of thumb:** use an in-container shell for *looking* (read a file, check a
 version, tail a log, run the app's own CLI). For *changing* things that should

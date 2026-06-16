@@ -1,0 +1,73 @@
+---
+# --- Stack location -----------------------------------------------------------
+# Root directory on the host holding the compose project and gluetun's state
+# (server lists, etc.).
+surfshark_data_dir: /srv/surfshark
+
+# --- VPN gateway image --------------------------------------------------------
+# The container is gluetun configured for the Surfshark provider. gluetun is the
+# standard "VPN-in-a-container" gateway: it brings up the tunnel, runs a kill
+# switch (its firewall drops all non-VPN traffic), does DNS-over-TLS, and
+# exposes a healthcheck. Other containers route through it with
+# `network_mode: "container:{{ surfshark_container_name }}"` (see the sonarr /
+# radarr roles).
+surfshark_image: docker.io/qmcgaw/gluetun:latest
+surfshark_container_name: surfshark
+
+# --- Surfshark connection -----------------------------------------------------
+# openvpn (default) only needs the Surfshark *service credentials* (Surfshark
+# dashboard → VPN → Manual setup → Credentials — NOT your account login).
+# wireguard is faster but needs a generated private key + address.
+surfshark_vpn_type: openvpn
+
+# OpenVPN service credentials. Leave empty here and set them (vaulted) in
+# inventory. Required when surfshark_vpn_type == openvpn.
+surfshark_openvpn_user: ""
+surfshark_openvpn_password: ""
+
+# WireGuard parameters. Required when surfshark_vpn_type == wireguard.
+surfshark_wireguard_private_key: ""
+surfshark_wireguard_addresses: ""
+
+# Where to exit. Comma-separated country names as gluetun expects (e.g.
+# "Netherlands,Germany"). Optionally narrow further with cities/regions.
+surfshark_server_countries: "Netherlands"
+surfshark_server_cities: ""
+
+# --- Kill switch / routing ----------------------------------------------------
+# Subnets gluetun is allowed to reach OUTSIDE the tunnel. This must include the
+# Docker subnet so the reverse proxy (Caddy) can reach the app UIs that live in
+# this container's network namespace and get replies back; covering all RFC1918
+# ranges also keeps LAN/media traffic off the VPN. Everything not listed here
+# can ONLY leave through the tunnel — that is the kill switch.
+surfshark_firewall_outbound_subnets: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
+# Inbound ports gluetun's firewall accepts on the local network. Must list the
+# listening port of every app that joins this container's namespace, so Caddy
+# (or the host) can reach their UIs. Defaults cover Sonarr (8989) + Radarr
+# (7878).
+surfshark_input_ports: "8989,7878"
+
+# Optionally publish ports on the host (e.g. ["8989:8989"]). Usually left empty
+# — the app UIs are reached through the shared Caddy via this container's name.
+surfshark_published_ports: []
+
+surfshark_timezone: UTC
+
+# --- Shared network (provided by sage.final.caddy) ----------------------------
+# This container joins the shared `web` network so Caddy can reverse-proxy to
+# the app UIs in its namespace (upstream "{{ surfshark_container_name }}:<port>").
+surfshark_shared_network: web
+
+# --- Container runtime install ------------------------------------------------
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+surfshark_install_docker: false
+
+# Rootful: stack runs via system Docker. surfshark_user owns the files on disk.
+surfshark_user: root
+
+# Group that owns the stack's files on the host. Admins in
+# surfshark_group_members can read/write {{ surfshark_data_dir }} via SFTP.
+surfshark_group: surfshark
+surfshark_group_members: []

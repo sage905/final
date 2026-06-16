@@ -1,0 +1,49 @@
+---
+# Radarr has no network of its own — it joins the VPN container's namespace. So
+# that container must exist and be running before Radarr can start.
+- name: Get the VPN gateway container state
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Running{{ "}}" }}'
+      {{ radarr_vpn_container }}
+  register: radarr_vpn_state
+  changed_when: false
+  failed_when: false
+
+- name: Assert the VPN gateway is running
+  ansible.builtin.assert:
+    that:
+      - radarr_vpn_state.stdout == 'true'
+    fail_msg: >-
+      The VPN container '{{ radarr_vpn_container }}' is not running. Deploy
+      sage.final.surfshark first (e.g. --tags surfshark) — Radarr routes all
+      its traffic through it and cannot start without it.
+
+- name: Bring up the Radarr stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --remove-orphans
+    chdir: "{{ radarr_data_dir }}"
+  register: radarr_compose_result
+  changed_when: "'Creating' in radarr_compose_result.stdout
+                 or 'Recreating' in radarr_compose_result.stdout
+                 or 'Started' in radarr_compose_result.stderr"
+
+# If the VPN container was recreated since Radarr last started, Radarr is now
+# bound to a network namespace that no longer exists and is stuck restarting.
+# `up -d` won't fix that on its own, so force-recreate it to rejoin the current
+# VPN namespace.
+- name: Check the Radarr container status
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Status{{ "}}" }}'
+      {{ radarr_container_name }}
+  register: radarr_status
+  changed_when: false
+  failed_when: false
+
+- name: Re-attach Radarr to the current VPN namespace
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ radarr_data_dir }}"
+  when: radarr_status.stdout != 'running'
+  changed_when: true

@@ -9,6 +9,9 @@
 #   ansible-navigator run site.yml --tags wings
 #   ansible-navigator run site.yml --tags pelican_wings
 #   ansible-navigator run site.yml --tags mysql
+#   ansible-navigator run site.yml --tags surfshark
+#   ansible-navigator run site.yml --tags sonarr
+#   ansible-navigator run site.yml --tags radarr
 #   ansible-navigator run site.yml --tags wordpress
 #   ansible-navigator run site.yml --tags dashy
 #   ansible-navigator run site.yml --tags glance
@@ -73,6 +76,9 @@
     - pelican_panel
     - pterodactyl_panel
     - mysql
+    - surfshark
+    - sonarr
+    - radarr
     - wordpress
     - pelican_wings
     - pterodactyl_wings
@@ -154,6 +160,37 @@
     - mysql
   roles:
     - role: sage.final.mysql
+
+# Surfshark VPN gateway (gluetun) + the *arr apps that route through it. Order
+# matters: the VPN container must be up before Sonarr/Radarr, which join its
+# network namespace (network_mode "container:surfshark") and have no internet
+# path except the tunnel. Dormant until hosts are placed in these groups.
+- name: Deploy the Surfshark VPN gateway
+  hosts: surfshark
+  become: true
+  gather_facts: true
+  tags:
+    - surfshark
+  roles:
+    - role: sage.final.surfshark
+
+- name: Deploy Sonarr (behind the VPN)
+  hosts: sonarr
+  become: true
+  gather_facts: true
+  tags:
+    - sonarr
+  roles:
+    - role: sage.final.sonarr
+
+- name: Deploy Radarr (behind the VPN)
+  hosts: radarr
+  become: true
+  gather_facts: true
+  tags:
+    - radarr
+  roles:
+    - role: sage.final.radarr
 
 - name: Deploy WordPress
   hosts: wordpress

@@ -1,0 +1,23 @@
+---
+# {{ ansible_managed }}
+name: radarr
+
+services:
+  radarr:
+    image: {{ radarr_image }}
+    container_name: {{ radarr_container_name }}
+    restart: always
+    # Join the VPN gateway's network namespace. Radarr therefore has NO network
+    # interfaces of its own — every packet leaves through the VPN tunnel, or is
+    # dropped by the gateway's kill switch. As a consequence this service cannot
+    # declare `networks:` or `ports:`; the web UI ({{ radarr_container_port }})
+    # is reached through the VPN container's name (see the surfshark role).
+    network_mode: "container:{{ radarr_vpn_container }}"
+    environment:
+      PUID: "{{ radarr_puid }}"
+      PGID: "{{ radarr_pgid }}"
+      TZ: "{{ radarr_timezone }}"
+    volumes:
+      - "{{ radarr_data_dir }}/config:/config"
+      - "{{ radarr_movies_path }}:/movies"
+      - "{{ radarr_downloads_path }}:/downloads"

@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: surfshark
+  namespace: sage
+  author: Sage
+  description: >-
+    Run a Surfshark VPN gateway container (gluetun) with a kill switch, for
+    other containers to route their internet traffic through.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - surfshark
+    - gluetun
+    - vpn
+    - docker
+    - compose
+dependencies: []

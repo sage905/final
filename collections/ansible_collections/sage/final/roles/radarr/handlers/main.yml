@@ -1,0 +1,6 @@
+---
+- name: Recreate radarr stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ radarr_data_dir }}"
+  changed_when: true
