@@ -17,6 +17,23 @@ disk_pool_branches:
   - /mnt/disk4
   - /mnt/disk5
 
+# --- Pool mount (mergerfs) ----------------------------------------------------
+# The mergerfs union mount itself (src = the branches joined by ':', mounted at
+# disk_pool_root). category.create=pfrd spreads new files across all branches
+# weighted by free space — the right policy for these asymmetric disks (one
+# large + several small); a plain most-free-space policy would just pile onto
+# the largest. minfreespace keeps a per-branch margin. See the project docs.
+disk_pool_manage_mount: true
+disk_pool_fstype: fuse.mergerfs
+disk_pool_mount_opts: >-
+  defaults,allow_other,use_ino,cache.files=off,moveonenospc=true,category.create=pfrd,minfreespace=200G,fsname=mergerfs,nofail
+
+# pfrd needs mergerfs >= 2.37 — newer than Ubuntu's packaged version. On an
+# already-upgraded host leave this false; on a fresh host set it true and point
+# disk_pool_mergerfs_deb_url at the upstream .deb to install/upgrade.
+disk_pool_install_mergerfs: false
+disk_pool_mergerfs_deb_url: ""
+
 # Library owner (the human/SFTP admin) and the shared group every media service
 # runs with. The owner keeps full access; the group carries setgid + group-write
 # so all services and admins collaborate on the same files. disk_pool_owner is
@@ -28,8 +45,9 @@ disk_pool_group: jellyfin
 # apps set UMASK 002 and Jellyfin runs as the owner so files stay group-writable.
 disk_pool_dir_mode: "2775"
 
-# Shared library subdirectories created and owned under disk_pool_root. Keep in
-# sync with the app roles' *_tv_path / *_movies_path / *_downloads_path.
+# Shared library subdirectories, seeded on every branch so the pool spreads
+# files across all disks. Keep in sync with the app roles' *_tv_path /
+# *_movies_path / *_downloads_path.
 disk_pool_data_dirs:
   - media
   - media/tv

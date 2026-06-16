@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: disk_stripe
+  namespace: sage
+  author: Sage
+  description: Mount an existing RAID0 stripe at the game-server data directory.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - storage
+    - raid
+    - mount
+dependencies: []

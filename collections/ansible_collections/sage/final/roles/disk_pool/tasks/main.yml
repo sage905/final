@@ -17,6 +17,28 @@
     groups: "{{ disk_pool_group }}"
     append: true
 
+# Optional one-time upstream mergerfs install/upgrade (Ubuntu's package predates
+# pfrd). No-op unless explicitly enabled with a .deb URL.
+- name: Install/upgrade mergerfs from the upstream package
+  ansible.builtin.apt:
+    deb: "{{ disk_pool_mergerfs_deb_url }}"
+  when:
+    - disk_pool_install_mergerfs | bool
+    - disk_pool_mergerfs_deb_url | length > 0
+
+# Manage the mergerfs union mount in fstab and ensure it's mounted. Idempotent:
+# with the current fstab line this is a no-op (no disruptive remount of a live
+# pool). Changing mount options here updates fstab but needs a manual remount
+# (unmount requires the media containers stopped) to take effect live.
+- name: Mount the mergerfs media pool
+  ansible.posix.mount:
+    path: "{{ disk_pool_root }}"
+    src: "{{ disk_pool_branches | join(':') }}"
+    fstype: "{{ disk_pool_fstype }}"
+    opts: "{{ disk_pool_mount_opts }}"
+    state: mounted
+  when: disk_pool_manage_mount | bool
+
 # Non-recursive on purpose: only the pool root and branch roots themselves are
 # normalized, so restrictive siblings (backups/, gamebackups/, lost+found/) are
 # left untouched. The one-time heal play fixes existing library contents.
@@ -29,11 +51,18 @@
     mode: "{{ disk_pool_dir_mode }}"
   loop: "{{ [disk_pool_root] + disk_pool_branches }}"
 
-- name: Ensure the shared library directories exist with the right ownership
+# Seed the library skeleton on EVERY branch (not through the mergerfs union).
+# This makes the directory structure and its ownership/permissions identical on
+# all branches, so the pool distributes files across every disk regardless of
+# create policy (and an existing-path policy isn't trapped onto one disk). The
+# mount itself uses category.create=pfrd to spread new writes by free space.
+- name: Pre-seed the library skeleton on every branch
   ansible.builtin.file:
-    path: "{{ disk_pool_root }}/{{ item }}"
+    path: "{{ item[0] }}/{{ item[1] }}"
     state: directory
     owner: "{{ disk_pool_owner }}"
     group: "{{ disk_pool_group }}"
     mode: "{{ disk_pool_dir_mode }}"
-  loop: "{{ disk_pool_data_dirs }}"
+  loop: "{{ disk_pool_branches | product(disk_pool_data_dirs) | list }}"
+  loop_control:
+    label: "{{ item[0] }}/{{ item[1] }}"

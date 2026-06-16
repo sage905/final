@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  role_name: disk_os
+  namespace: sage
+  author: Sage
+  description: Grow the root LV to use the whole volume group and resize the filesystem.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - storage
+    - lvm
+dependencies: []

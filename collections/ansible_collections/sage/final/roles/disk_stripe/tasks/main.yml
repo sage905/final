@@ -1,0 +1,35 @@
+---
+- name: Validate role arguments
+  ansible.builtin.validate_argument_spec:
+    argument_spec: >-
+      {{ (lookup('ansible.builtin.file',
+                 role_path ~ '/meta/argument_specs.yml')
+          | from_yaml)['argument_specs']['main']['options'] }}
+
+- name: Assert the array UUID is set
+  ansible.builtin.assert:
+    that:
+      - disk_stripe_fs_uuid | length > 0
+    fail_msg: >-
+      disk_stripe_fs_uuid is empty. Set it (in inventory) to the filesystem UUID
+      of the striped array — find it with `blkid /dev/md0`. This role mounts an
+      existing array; it never creates or formats one.
+
+# Mount the existing array by UUID and persist it in fstab. state=mounted also
+# creates the mountpoint directory if missing. Idempotent — re-running with the
+# current fstab line is a no-op (no disruptive remount).
+- name: Mount the striped array at the game-server data dir
+  ansible.posix.mount:
+    path: "{{ disk_stripe_mountpoint }}"
+    src: "UUID={{ disk_stripe_fs_uuid }}"
+    fstype: "{{ disk_stripe_fstype }}"
+    opts: "{{ disk_stripe_mount_opts }}"
+    state: mounted
+
+- name: Ensure the mountpoint ownership and permissions
+  ansible.builtin.file:
+    path: "{{ disk_stripe_mountpoint }}"
+    state: directory
+    owner: "{{ disk_stripe_owner }}"
+    group: "{{ disk_stripe_group }}"
+    mode: "{{ disk_stripe_mode }}"

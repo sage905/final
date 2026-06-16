@@ -82,14 +82,34 @@ each other on a private Docker network called `web`.
 
 ```mermaid
 flowchart TD
-    srv["/srv  ← everything important, backed up nightly"]
+    srv["/srv  ← app configs & data, backed up nightly"]
     srv --> caddy["/srv/caddy<br/>Caddyfile, certificates, vhost snippets"]
     srv --> apps["/srv/&lt;app&gt;  (jellyfin, wordpress, dashy, ...)<br/>docker-compose.yml + the app's data"]
     srv --> secrets["/srv/&lt;app&gt;/secrets<br/>auto-generated passwords & keys"]
-    srv --> bulk["/srv/bulk<br/>large, replaceable files — NOT backed up"]
+    srv --> games["/srv/gameservers<br/>game-server data — its own RAID0 disk (md0, xfs)"]
+    srv --> bulk["/srv/bulk<br/>media library — mergerfs pool, NOT backed up"]
+    bulk --> pool["union of /mnt/disk1..5<br/>new files spread across disks by free space (pfrd)"]
     etc["/etc/borgmatic<br/>backup config + encryption key"]
     etc2["/etc/wireguard<br/>VPN config"]
 ```
+
+### Storage layout (the three tiers)
+
+The server has three distinct storage areas, each codified by a small role
+(`sage.final.disk_os`, `disk_stripe`, `disk_pool` — run with the `storage` tag):
+
+| Area | Backing disk | Holds | Notes |
+|---|---|---|---|
+| **Root `/`** | LVM logical volume on `ubuntu-vg` (PV `/dev/sdg3`) | OS, `/srv/<app>` configs, Docker/containerd images in `/var` | `disk_os` grows the LV to fill the whole volume group + resizes the filesystem online. |
+| **`/srv/gameservers`** | `md0` — RAID0 stripe of two disks (xfs) | Pelican Wings' per-server volumes | `disk_stripe` mounts the array by UUID. RAID0 = no redundancy by design; Wings backs servers up to `/srv/bulk/gamebackups`. |
+| **`/srv/bulk`** | mergerfs union over `/mnt/disk1..5` (ext4) | Jellyfin/Sonarr/Radarr media + downloads | `disk_pool` owns the mount (create policy `pfrd`) and the shared-group permissions. mergerfs is **not** RAID — each file lives whole on one disk; a disk failure loses only that disk's files. Excluded from backups. |
+
+**Media permissions.** Everything under `/srv/bulk/{media,downloads}` is owned
+`final:jellyfin`, mode `2775` (setgid + group-write). All media services run
+with the shared **`jellyfin`** group (Sonarr/Radarr `PGID=1010`, `UMASK=002`;
+Jellyfin runs as `1000:1010`), so every service and SFTP admin can collaborate
+on the same files while the `final` user keeps full ownership. `disk_pool`
+enforces this and seeds the directory skeleton on every disk.
 
 ---
 
@@ -155,8 +175,9 @@ flowchart TD
 | **Hardening** | SSH lock-down, fail2ban, kernel hardening, automatic security patches | system-wide |
 | **WireGuard** | Encrypted VPN tunnel to your private network (gateway `gate.toal.ca`) | `/etc/wireguard/wg0.conf` |
 
-> The folders `disk_os`, `disk_pool`, `disk_stripe`, and `run` in the project are
-> empty placeholders that set up nothing. Ignore them.
+> The `disk_os`, `disk_pool`, and `disk_stripe` roles manage the server's three
+> storage tiers (see "Storage layout" in Section 2); they run under the `storage`
+> tag. The `run` folder is still an empty placeholder — ignore it.
 
 ### 3a. The optional game-server database host (MySQL + Adminer)
 
@@ -534,9 +555,12 @@ ansible-navigator run site.yml --tags hardening
 ```
 
 Available tags: `update`, `hardening`, `wireguard_client`, `cockpit`, `caddy`,
-`pelican`, `pelican_wings`, `pterodactyl`, `wings`, `mysql`, `surfshark`,
+`pelican`, `pelican_wings`, `pterodactyl`, `wings`, `mysql`, `disk_os`,
+`disk_stripe`, `disk_pool`, `storage`, `surfshark`,
 `sonarr`, `radarr`, `seerr`, `wordpress`, `dashy`, `glance`, `bracket`,
-`jellyfin`, `portainer`, `healthchecks`, `borg`. Add `--skip-tags update` to skip
+`jellyfin`, `portainer`, `healthchecks`, `borg`. The `storage` tag runs all
+three disk roles together (root LV, game-server stripe, media pool). Add
+`--skip-tags update` to skip
 the OS upgrade. The `mysql` play (the optional game-server database host, Section
 3a) and the `surfshark` / `sonarr` / `radarr` / `seerr` plays (the optional media
 stack, Section 3b) are dormant — they do nothing unless a host is placed in their
@@ -635,7 +659,7 @@ you fully control by hand.
 | Can't reach Dashy, Glance, Portainer, or Healthchecks | They're internal-only on purpose — reach them from your private network (`192.168.0.0/16`) or over the WireGuard VPN. Confirm the tunnel with `sudo wg show`. |
 | Locked out / blocked by fail2ban | From an allowed network: `sudo fail2ban-client set sshd unbanip <your-IP>`. |
 | Whole server unreachable | Use your hosting provider's console to confirm it's powered on; check Cockpit at `:9090`. |
-| Server low on disk | In Cockpit, or `df -h`. Old container images can be cleared with `sudo docker image prune`. Remember `/srv/bulk` is not backed up — safe place for large temporary files. |
+| Server low on disk | Check with `df -h` (or Cockpit). Old container images: `sudo docker image prune`. If the **root** filesystem is full but the volume group has free space (`sudo vgs` shows `VFree`), grow it: `--tags disk_os` (or by hand `sudo lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv`). Game-server data lives on its own disk (`/srv/gameservers`, md0); media on the `/srv/bulk` pool. `/srv/bulk` is not backed up — safe for large temporary files. |
 
 ---
 

@@ -33,6 +33,31 @@ argument_specs:
         type: str
         default: "2775"
         description: setgid + group-write so services and admins collaborate.
+      disk_pool_manage_mount:
+        type: bool
+        default: true
+        description: Manage the mergerfs union mount (fstab + mounted state).
+      disk_pool_fstype:
+        type: str
+        default: fuse.mergerfs
+      disk_pool_mount_opts:
+        type: str
+        description: >-
+          mergerfs mount options. category.create=pfrd spreads files across
+          branches by free space (right for asymmetric disks); minfreespace
+          keeps a per-branch margin.
+        default: >-
+          defaults,allow_other,use_ino,cache.files=off,moveonenospc=true,category.create=pfrd,minfreespace=200G,fsname=mergerfs,nofail
+      disk_pool_install_mergerfs:
+        type: bool
+        default: false
+        description: >-
+          Install/upgrade mergerfs from disk_pool_mergerfs_deb_url (Ubuntu's
+          package is too old for pfrd). Leave false on an upgraded host.
+      disk_pool_mergerfs_deb_url:
+        type: str
+        default: ""
+        description: URL of the upstream mergerfs .deb (used only when installing).
       disk_pool_data_dirs:
         type: list
         elements: str

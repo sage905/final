@@ -1,0 +1,24 @@
+---
+# RAID0 stripe that backs the game-server data directory. On coserver this is
+# md0 (two disks striped, xfs) mounted at /srv/gameservers — Pelican Wings'
+# `data:` dir (sage.final.pelican_wings's pelican_wings_data_dir).
+#
+# SCOPE: this role only ensures an ALREADY-ASSEMBLED array's filesystem is
+# mounted where it belongs, with the right mountpoint ownership. It does NOT
+# create, assemble, or format the array (mdadm + mkfs are destructive one-time
+# steps done by hand). Identify the array by its filesystem UUID so the mount is
+# stable across device renames (mdX numbering can change).
+
+# Filesystem UUID of the striped array (blkid /dev/md0). Required — set per host
+# in inventory; there is no safe generic default.
+disk_stripe_fs_uuid: ""
+
+disk_stripe_mountpoint: /srv/gameservers
+disk_stripe_fstype: xfs
+disk_stripe_mount_opts: "defaults,nofail"
+
+# Mountpoint ownership. Wings runs as root and creates each server's volume dir
+# under here, so root:root 0700 matches what it expects.
+disk_stripe_owner: root
+disk_stripe_group: root
+disk_stripe_mode: "0700"

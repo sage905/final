@@ -1,0 +1,30 @@
+---
+argument_specs:
+  main:
+    short_description: Mount an existing RAID0 stripe at the game-server data directory.
+    options:
+      disk_stripe_fs_uuid:
+        type: str
+        default: ""
+        description: >-
+          Filesystem UUID of the already-assembled striped array (blkid
+          /dev/md0). Required at runtime; set per host in inventory.
+      disk_stripe_mountpoint:
+        type: path
+        default: /srv/gameservers
+        description: Where the array is mounted (Wings' data dir).
+      disk_stripe_fstype:
+        type: str
+        default: xfs
+      disk_stripe_mount_opts:
+        type: str
+        default: "defaults,nofail"
+      disk_stripe_owner:
+        type: str
+        default: root
+      disk_stripe_group:
+        type: str
+        default: root
+      disk_stripe_mode:
+        type: str
+        default: "0700"

@@ -9,6 +9,8 @@
 #   ansible-navigator run site.yml --tags wings
 #   ansible-navigator run site.yml --tags pelican_wings
 #   ansible-navigator run site.yml --tags mysql
+#   ansible-navigator run site.yml --tags disk_os
+#   ansible-navigator run site.yml --tags disk_stripe
 #   ansible-navigator run site.yml --tags disk_pool
 #   ansible-navigator run site.yml --tags surfshark
 #   ansible-navigator run site.yml --tags sonarr
@@ -61,6 +63,19 @@
     - wireguard_client
   roles:
     - role: sage.final.wireguard_client
+
+# Grow the root LV to use the whole volume group + resize its filesystem online.
+# Runs early so the host has headroom before the app stacks fill /srv and /var.
+# Dormant until a host is placed in the `disk_os` group.
+- name: Size the OS/root disk
+  hosts: disk_os
+  become: true
+  gather_facts: true
+  tags:
+    - disk_os
+    - storage
+  roles:
+    - role: sage.final.disk_os
 
 # Install the Docker engine once per host, up front, so the application plays
 # below don't each re-run the install. Container roles default
@@ -118,6 +133,20 @@
     - pterodactyl
   roles:
     - role: sage.final.pterodactyl_panel
+
+# Mount the RAID0 stripe (md0) at the game-server data dir before any Wings
+# play, so Pelican/Pterodactyl Wings stores server volumes on the dedicated disk
+# rather than the root filesystem. Dormant until a host is in the `disk_stripe`
+# group.
+- name: Mount the game-server storage stripe
+  hosts: disk_stripe
+  become: true
+  gather_facts: true
+  tags:
+    - disk_stripe
+    - storage
+  roles:
+    - role: sage.final.disk_stripe
 
 - name: Deploy Pterodactyl Wings
   hosts: pterodactyl_wings

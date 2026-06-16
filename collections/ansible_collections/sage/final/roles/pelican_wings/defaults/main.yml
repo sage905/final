@@ -25,9 +25,12 @@ pelican_wings_log_dir: /var/log/pelican
 # keeps server files in the same place. The node's config.yml must agree: set
 # the "Daemon Server File Directory" (system.data) under this path when
 # creating the node in the Panel, e.g. /srv/gameservers/volumes.
-# NOTE: this lives under /srv, so it is covered by the sage.final.borg nightly
-# backup. Add it to borg_exclude_patterns if game-server data is large and you
-# don't want it backed up.
+# STORAGE: on coserver this path is a dedicated RAID0 disk (md0) mounted here by
+# sage.final.disk_stripe — keeping game-server data off the root filesystem. The
+# mount must exist before Wings starts (site.yml runs disk_stripe first).
+# BACKUP: it lives under /srv, so sage.final.borg would back it up; exclude it
+# via borg_exclude_patterns if large (Wings already backs servers up to
+# pelican_wings_backup_dir).
 pelican_wings_data_dir: /srv/gameservers
 
 # Where Wings stores server backups (local backup driver). Under /srv/bulk,

@@ -1,0 +1,15 @@
+---
+- name: Validate role arguments
+  ansible.builtin.validate_argument_spec:
+    argument_spec: >-
+      {{ (lookup('ansible.builtin.file',
+                 role_path ~ '/meta/argument_specs.yml')
+          | from_yaml)['argument_specs']['main']['options'] }}
+
+- name: Extend the root logical volume and grow its filesystem
+  community.general.lvol:
+    vg: "{{ disk_os_vg }}"
+    lv: "{{ disk_os_lv }}"
+    size: "{{ disk_os_size }}"
+    resizefs: "{{ disk_os_resizefs }}"
+    shrink: "{{ disk_os_shrink }}"

@@ -1,0 +1,16 @@
+---
+# OS / root disk. The Ubuntu installer carved only ~100G for the root LV and
+# left the rest of the volume group unallocated; this role grows the root LV to
+# consume the whole VG and resizes the filesystem online (ext4 grows live, no
+# reboot). Idempotent: a no-op once the LV already spans the VG.
+#
+# SCOPE: extend only. The module will not shrink (disk_os_shrink: false), so it
+# can never reduce the root filesystem.
+disk_os_vg: ubuntu-vg
+disk_os_lv: ubuntu-lv
+
+# 100%VG = give the LV the entire volume group. Set to a fixed size (e.g. "300g")
+# to leave headroom in the VG for other logical volumes instead.
+disk_os_size: "100%VG"
+disk_os_resizefs: true
+disk_os_shrink: false

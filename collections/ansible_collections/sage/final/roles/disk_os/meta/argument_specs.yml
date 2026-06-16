@@ -1,0 +1,27 @@
+---
+argument_specs:
+  main:
+    short_description: Grow the root LV to use the whole volume group and resize the filesystem.
+    options:
+      disk_os_vg:
+        type: str
+        default: ubuntu-vg
+        description: Volume group holding the root logical volume.
+      disk_os_lv:
+        type: str
+        default: ubuntu-lv
+        description: Root logical volume name.
+      disk_os_size:
+        type: str
+        default: "100%VG"
+        description: >-
+          Target LV size. "100%VG" consumes the whole group; a fixed size (e.g.
+          "300g") leaves headroom for other LVs.
+      disk_os_resizefs:
+        type: bool
+        default: true
+        description: Resize the filesystem to match the LV (ext4 grows online).
+      disk_os_shrink:
+        type: bool
+        default: false
+        description: Allow shrinking. Left false so the root fs is never reduced.
