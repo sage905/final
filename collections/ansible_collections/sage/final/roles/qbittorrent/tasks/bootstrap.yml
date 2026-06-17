@@ -1,0 +1,65 @@
+---
+# On the shared network (qbittorrent_vpn_container empty): just ensure it exists.
+- name: Ensure the shared Docker network exists
+  ansible.builtin.command:
+    cmd: "docker network create {{ qbittorrent_shared_network }}"
+  register: qbittorrent_network_result
+  changed_when: qbittorrent_network_result.rc == 0
+  failed_when:
+    - qbittorrent_network_result.rc != 0
+    - "'already exists' not in qbittorrent_network_result.stderr"
+  when: qbittorrent_vpn_container | length == 0
+
+# Behind the VPN: qBittorrent has no network of its own — it joins the VPN
+# container's namespace. So that container must exist and be running first.
+- name: Get the VPN gateway container state
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Running{{ "}}" }}'
+      {{ qbittorrent_vpn_container }}
+  register: qbittorrent_vpn_state
+  changed_when: false
+  failed_when: false
+  when: qbittorrent_vpn_container | length > 0
+
+- name: Assert the VPN gateway is running
+  ansible.builtin.assert:
+    that:
+      - qbittorrent_vpn_state.stdout == 'true'
+    fail_msg: >-
+      The VPN container '{{ qbittorrent_vpn_container }}' is not running. Deploy
+      sage.final.surfshark first (e.g. --tags surfshark) — qBittorrent routes all
+      its traffic through it and cannot start without it.
+  when: qbittorrent_vpn_container | length > 0
+
+- name: Bring up the qBittorrent stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --remove-orphans
+    chdir: "{{ qbittorrent_data_dir }}"
+  register: qbittorrent_compose_result
+  changed_when: "'Creating' in qbittorrent_compose_result.stdout
+                 or 'Recreating' in qbittorrent_compose_result.stdout
+                 or 'Started' in qbittorrent_compose_result.stderr"
+
+# If the VPN container was recreated since qBittorrent last started, qBittorrent
+# is now bound to a network namespace that no longer exists and is stuck
+# restarting. `up -d` won't fix that, so force-recreate it to rejoin the current
+# VPN namespace. (Only relevant when routed through the VPN.)
+- name: Check the qBittorrent container status
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Status{{ "}}" }}'
+      {{ qbittorrent_container_name }}
+  register: qbittorrent_status
+  changed_when: false
+  failed_when: false
+  when: qbittorrent_vpn_container | length > 0
+
+- name: Re-attach qBittorrent to the current VPN namespace
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ qbittorrent_data_dir }}"
+  when:
+    - qbittorrent_vpn_container | length > 0
+    - qbittorrent_status.stdout != 'running'
+  changed_when: true

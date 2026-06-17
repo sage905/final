@@ -1,0 +1,72 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy qBittorrent routed through the Surfshark VPN gateway.
+    options:
+      qbittorrent_data_dir:
+        type: path
+        default: /srv/qbittorrent
+      qbittorrent_image:
+        type: str
+        default: lscr.io/linuxserver/qbittorrent:latest
+      qbittorrent_container_name:
+        type: str
+        default: qbittorrent
+      qbittorrent_webui_port:
+        type: int
+        default: 8080
+        description: >-
+          Web UI port. Reached via the VPN container's name and must be listed
+          in the surfshark role's surfshark_input_ports.
+      qbittorrent_vpn_container:
+        type: str
+        default: surfshark
+        description: >-
+          VPN gateway container whose network namespace qBittorrent joins
+          (network_mode "container:<this>"). Set "" to run on the shared
+          network instead (not recommended for a torrent client).
+      qbittorrent_shared_network:
+        type: str
+        default: web
+        description: >-
+          Shared network used when qbittorrent_vpn_container is empty (from
+          sage.final.caddy).
+      qbittorrent_puid:
+        type: int
+        default: 1000
+        description: linuxserver.io PUID; should own the downloads path.
+      qbittorrent_pgid:
+        type: int
+        default: 1010
+        description: >-
+          linuxserver.io PGID; the shared media group's GID so downloads are
+          group-shared with Sonarr/Radarr.
+      qbittorrent_umask:
+        type: str
+        default: "002"
+        description: Keeps new files group-writable for the shared media group.
+      qbittorrent_timezone:
+        type: str
+        default: UTC
+      qbittorrent_downloads_path:
+        type: path
+        default: /srv/bulk/downloads
+        description: >-
+          Host downloads path, mounted at /downloads. MUST match the *arr apps'
+          downloads path so completed-download imports are hardlinks, not copies.
+      qbittorrent_install_docker:
+        type: bool
+        default: false
+      qbittorrent_user:
+        type: str
+        default: root
+      qbittorrent_group:
+        type: str
+        default: qbittorrent
+      qbittorrent_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to qbittorrent_group. Listed users
+          must already exist on the host.

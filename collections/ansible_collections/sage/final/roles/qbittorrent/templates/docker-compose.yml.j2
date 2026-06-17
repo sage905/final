@@ -1,0 +1,38 @@
+---
+# {{ ansible_managed }}
+name: qbittorrent
+
+services:
+  qbittorrent:
+    image: {{ qbittorrent_image }}
+    container_name: {{ qbittorrent_container_name }}
+    restart: always
+{% if qbittorrent_vpn_container | length > 0 %}
+    # Join the VPN gateway's network namespace. qBittorrent therefore has NO
+    # network of its own — every packet (peers + trackers) leaves through the VPN
+    # tunnel, or is dropped by the gateway's kill switch. As a consequence this
+    # service cannot declare `networks:` or `ports:`; the Web UI
+    # ({{ qbittorrent_webui_port }}) is reached through the VPN container's name
+    # (it must be in the surfshark role's surfshark_input_ports).
+    network_mode: "container:{{ qbittorrent_vpn_container }}"
+{% endif %}
+    environment:
+      PUID: "{{ qbittorrent_puid }}"
+      PGID: "{{ qbittorrent_pgid }}"
+      UMASK: "{{ qbittorrent_umask }}"
+      TZ: "{{ qbittorrent_timezone }}"
+      WEBUI_PORT: "{{ qbittorrent_webui_port }}"
+    volumes:
+      - "{{ qbittorrent_data_dir }}/config:/config"
+      - "{{ qbittorrent_downloads_path }}:/downloads"
+{% if qbittorrent_vpn_container | length == 0 %}
+    # No VPN: qBittorrent runs on the shared network with its own address. Caddy
+    # reaches it directly at "{{ qbittorrent_container_name }}:{{ qbittorrent_webui_port }}".
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ qbittorrent_shared_network }}
+    external: true
+{% endif %}

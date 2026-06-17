@@ -1,0 +1,61 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy Prowlarr (indexer manager) behind the Surfshark VPN.
+    options:
+      prowlarr_data_dir:
+        type: path
+        default: /srv/prowlarr
+      prowlarr_image:
+        type: str
+        default: lscr.io/linuxserver/prowlarr:latest
+      prowlarr_container_name:
+        type: str
+        default: prowlarr
+      prowlarr_webui_port:
+        type: int
+        default: 9696
+        description: >-
+          Web UI port. Reached via the VPN container's name and must be listed
+          in the surfshark role's surfshark_input_ports.
+      prowlarr_vpn_container:
+        type: str
+        default: surfshark
+        description: >-
+          VPN gateway container whose network namespace Prowlarr joins
+          (network_mode "container:<this>"). Set "" to run on the shared
+          network instead.
+      prowlarr_shared_network:
+        type: str
+        default: web
+        description: >-
+          Shared network used when prowlarr_vpn_container is empty (from
+          sage.final.caddy).
+      prowlarr_puid:
+        type: int
+        default: 1000
+      prowlarr_pgid:
+        type: int
+        default: 1010
+      prowlarr_umask:
+        type: str
+        default: "002"
+      prowlarr_timezone:
+        type: str
+        default: UTC
+      prowlarr_install_docker:
+        type: bool
+        default: false
+      prowlarr_user:
+        type: str
+        default: root
+      prowlarr_group:
+        type: str
+        default: prowlarr
+      prowlarr_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to prowlarr_group. Listed users must
+          already exist on the host.

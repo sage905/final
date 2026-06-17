@@ -12,11 +12,17 @@ radarr_container_name: radarr
 # it must be listed in the VPN role's surfshark_input_ports.
 radarr_container_port: 7878
 
-# --- VPN routing (the whole point) -------------------------------------------
+# --- Network routing ----------------------------------------------------------
 # Name of the VPN gateway container (sage.final.surfshark) whose network
 # namespace Radarr joins. Radarr gets NO network of its own — all its traffic
 # exits through this container's VPN tunnel, or not at all (kill switch).
+# Set to "" to instead run Radarr on the shared network (radarr_shared_network)
+# with its own address, reached directly by Caddy at radarr:{{ radarr_container_port | default(7878) }}.
 radarr_vpn_container: surfshark
+
+# Shared Docker network used when radarr_vpn_container is empty (provided by
+# sage.final.caddy).
+radarr_shared_network: web
 
 # --- linuxserver.io user mapping ---------------------------------------------
 # The image runs as PUID:PGID and chowns /config to it. PUID owns the files;

@@ -22,8 +22,15 @@ argument_specs:
         type: str
         default: surfshark
         description: >-
-          Name of the VPN gateway container whose network namespace Sonarr
-          joins (network_mode "container:<this>").
+          VPN gateway container whose network namespace Sonarr joins
+          (network_mode "container:<this>"). Set "" to run on the shared
+          network instead.
+      sonarr_shared_network:
+        type: str
+        default: web
+        description: >-
+          Shared network used when sonarr_vpn_container is empty (from
+          sage.final.caddy).
       sonarr_puid:
         type: int
         default: 1000

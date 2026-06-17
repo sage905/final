@@ -1,0 +1,40 @@
+---
+- name: Ensure prowlarr group exists
+  ansible.builtin.group:
+    name: "{{ prowlarr_group }}"
+    state: present
+
+- name: Add admin users to the prowlarr group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ prowlarr_group }}"
+    append: true
+  loop: "{{ prowlarr_group_members }}"
+  when: prowlarr_group_members | length > 0
+
+# Top-level dir holds the compose file (host-owned). /config is created and
+# owned by the linuxserver PUID:PGID so the image can write through the mount.
+- name: Create the prowlarr top-level directory
+  ansible.builtin.file:
+    path: "{{ prowlarr_data_dir }}"
+    state: directory
+    owner: "{{ prowlarr_user }}"
+    group: "{{ prowlarr_group }}"
+    mode: "2775"
+
+- name: Create the prowlarr config directory (owned by the container user)
+  ansible.builtin.file:
+    path: "{{ prowlarr_data_dir }}/config"
+    state: directory
+    owner: "{{ prowlarr_puid }}"
+    group: "{{ prowlarr_pgid }}"
+    mode: "0775"
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ prowlarr_data_dir }}/docker-compose.yml"
+    owner: "{{ prowlarr_user }}"
+    group: "{{ prowlarr_group }}"
+    mode: "0660"
+  notify: Recreate prowlarr stack

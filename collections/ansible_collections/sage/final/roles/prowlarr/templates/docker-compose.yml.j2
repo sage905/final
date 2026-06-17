@@ -1,0 +1,35 @@
+---
+# {{ ansible_managed }}
+name: prowlarr
+
+services:
+  prowlarr:
+    image: {{ prowlarr_image }}
+    container_name: {{ prowlarr_container_name }}
+    restart: always
+{% if prowlarr_vpn_container | length > 0 %}
+    # Join the VPN gateway's network namespace so indexer/tracker queries leave
+    # only through the tunnel, or are dropped by the kill switch. This service
+    # cannot declare `networks:` or `ports:`; the Web UI ({{ prowlarr_webui_port }})
+    # is reached through the VPN container's name (it must be in the surfshark
+    # role's surfshark_input_ports).
+    network_mode: "container:{{ prowlarr_vpn_container }}"
+{% endif %}
+    environment:
+      PUID: "{{ prowlarr_puid }}"
+      PGID: "{{ prowlarr_pgid }}"
+      UMASK: "{{ prowlarr_umask }}"
+      TZ: "{{ prowlarr_timezone }}"
+    volumes:
+      - "{{ prowlarr_data_dir }}/config:/config"
+{% if prowlarr_vpn_container | length == 0 %}
+    # No VPN: Prowlarr runs on the shared network with its own address. Caddy
+    # reaches it directly at "{{ prowlarr_container_name }}:{{ prowlarr_webui_port }}".
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ prowlarr_shared_network }}
+    external: true
+{% endif %}

@@ -1,0 +1,50 @@
+---
+# --- Stack location -----------------------------------------------------------
+qbittorrent_data_dir: /srv/qbittorrent
+
+# --- Image --------------------------------------------------------------------
+qbittorrent_image: lscr.io/linuxserver/qbittorrent:latest
+qbittorrent_container_name: qbittorrent
+
+# Web UI port qBittorrent listens on inside the VPN container's namespace.
+# Because qBittorrent shares the VPN container's network, this port is reached
+# via that container's name (Caddy upstream
+# "{{ qbittorrent_vpn_container }}:{{ qbittorrent_webui_port }}") and must be
+# listed in the surfshark role's surfshark_input_ports.
+qbittorrent_webui_port: 8080
+
+# --- Network routing (the whole point) ---------------------------------------
+# qBittorrent joins the VPN gateway container's network namespace, so ALL of its
+# traffic — peer and tracker — exits through the VPN tunnel, or not at all
+# (kill switch). This is the one service that genuinely needs the VPN. Set ""
+# to run it on the shared network instead (NOT recommended for a torrent client).
+qbittorrent_vpn_container: surfshark
+qbittorrent_shared_network: web
+
+# --- linuxserver.io user mapping ---------------------------------------------
+# Run as the shared media owner:group (same PUID/PGID as Sonarr/Radarr) and,
+# crucially, the SAME downloads path — so completed downloads import as instant
+# hardlinks, not slow copies.
+qbittorrent_puid: 1000
+qbittorrent_pgid: 1010
+qbittorrent_umask: "002"
+qbittorrent_timezone: UTC
+
+# --- Downloads ----------------------------------------------------------------
+# MUST match sonarr_downloads_path / radarr_downloads_path exactly. Owned by the
+# shared media tree (sage.final.disk_pool), not this role.
+qbittorrent_downloads_path: /srv/bulk/downloads
+
+# --- Container runtime install ------------------------------------------------
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+qbittorrent_install_docker: false
+
+# Rootful: stack runs via system Docker. qbittorrent_user owns the compose file
+# on disk; /config inside is owned by qbittorrent_puid:qbittorrent_pgid.
+qbittorrent_user: root
+
+# Group that owns the stack's files on the host. Admins in
+# qbittorrent_group_members can read/write {{ qbittorrent_data_dir }} via SFTP.
+qbittorrent_group: qbittorrent
+qbittorrent_group_members: []

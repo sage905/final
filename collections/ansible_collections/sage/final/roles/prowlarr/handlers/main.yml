@@ -1,0 +1,6 @@
+---
+- name: Recreate prowlarr stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ prowlarr_data_dir }}"
+  changed_when: true

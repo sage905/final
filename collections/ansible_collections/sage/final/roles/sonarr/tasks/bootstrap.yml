@@ -1,6 +1,17 @@
 ---
-# Sonarr has no network of its own — it joins the VPN container's namespace. So
-# that container must exist and be running before Sonarr can start.
+# On the shared network (sonarr_vpn_container empty): just ensure it exists.
+- name: Ensure the shared Docker network exists
+  ansible.builtin.command:
+    cmd: "docker network create {{ sonarr_shared_network }}"
+  register: sonarr_network_result
+  changed_when: sonarr_network_result.rc == 0
+  failed_when:
+    - sonarr_network_result.rc != 0
+    - "'already exists' not in sonarr_network_result.stderr"
+  when: sonarr_vpn_container | length == 0
+
+# Behind the VPN: Sonarr has no network of its own — it joins the VPN container's
+# namespace. So that container must exist and be running before Sonarr can start.
 - name: Get the VPN gateway container state
   ansible.builtin.command:
     cmd: >-
@@ -9,6 +20,7 @@
   register: sonarr_vpn_state
   changed_when: false
   failed_when: false
+  when: sonarr_vpn_container | length > 0
 
 - name: Assert the VPN gateway is running
   ansible.builtin.assert:
@@ -18,6 +30,7 @@
       The VPN container '{{ sonarr_vpn_container }}' is not running. Deploy
       sage.final.surfshark first (e.g. --tags surfshark) — Sonarr routes all
       its traffic through it and cannot start without it.
+  when: sonarr_vpn_container | length > 0
 
 - name: Bring up the Sonarr stack
   ansible.builtin.command:
@@ -31,7 +44,7 @@
 # If the VPN container was recreated since Sonarr last started, Sonarr is now
 # bound to a network namespace that no longer exists and is stuck restarting.
 # `up -d` won't fix that on its own, so force-recreate it to rejoin the current
-# VPN namespace.
+# VPN namespace. (Only relevant when routed through the VPN.)
 - name: Check the Sonarr container status
   ansible.builtin.command:
     cmd: >-
@@ -40,10 +53,13 @@
   register: sonarr_status
   changed_when: false
   failed_when: false
+  when: sonarr_vpn_container | length > 0
 
 - name: Re-attach Sonarr to the current VPN namespace
   ansible.builtin.command:
     cmd: docker compose up -d --force-recreate
     chdir: "{{ sonarr_data_dir }}"
-  when: sonarr_status.stdout != 'running'
+  when:
+    - sonarr_vpn_container | length > 0
+    - sonarr_status.stdout != 'running'
   changed_when: true
