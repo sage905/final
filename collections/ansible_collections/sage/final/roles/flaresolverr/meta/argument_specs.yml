@@ -1,0 +1,72 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy FlareSolverr (Cloudflare solver) behind the Surfshark VPN.
+    options:
+      flaresolverr_data_dir:
+        type: path
+        default: /srv/flaresolverr
+      flaresolverr_image:
+        type: str
+        default: ghcr.io/flaresolverr/flaresolverr:latest
+      flaresolverr_container_name:
+        type: str
+        default: flaresolverr
+      flaresolverr_port:
+        type: int
+        default: 8191
+        description: >-
+          API port FlareSolverr listens on. Reached by Prowlarr at
+          http://<container_name>:<port> on the shared network, and published on
+          the host LAN by flaresolverr_published_ports for troubleshooting.
+      flaresolverr_vpn_container:
+        type: str
+        default: ""
+        description: >-
+          Set to a VPN gateway container name to route FlareSolverr through its
+          namespace (network_mode "container:<this>"). Must match Prowlarr's
+          placement so they share an exit IP. Empty (default) runs it on the
+          shared network, matching this host's shared-network *arr stack.
+      flaresolverr_shared_network:
+        type: str
+        default: web
+        description: >-
+          Shared network used when flaresolverr_vpn_container is empty (from
+          sage.final.caddy).
+      flaresolverr_published_ports:
+        type: list
+        elements: str
+        default:
+          - "{{ ansible_default_ipv4.address }}:8191:8191"
+        description: >-
+          Host port mappings for LAN troubleshooting access, published on the
+          host's primary LAN address by default. Set [] to disable. Only honoured
+          on the shared network; behind the VPN this must be empty and the port
+          published via the surfshark role instead.
+      flaresolverr_log_level:
+        type: str
+        default: info
+        choices:
+          - debug
+          - info
+          - warning
+          - error
+      flaresolverr_timezone:
+        type: str
+        default: UTC
+      flaresolverr_install_docker:
+        type: bool
+        default: false
+      flaresolverr_user:
+        type: str
+        default: root
+      flaresolverr_group:
+        type: str
+        default: flaresolverr
+      flaresolverr_group_members:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional system users to add to flaresolverr_group. Listed users
+          must already exist on the host.

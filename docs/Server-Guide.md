@@ -151,15 +151,17 @@ enforces this and seeds the directory skeleton on every disk.
 > it as the `panel` user (password in `/srv/mysql/secrets/panel_password`). See
 > Section 3a and the role's README for setup.
 
-> **Optional — media automation stack (Sonarr · Radarr · Prowlarr · qBittorrent ·
-> Seerr, with a Surfshark VPN).** A set of roles add the popular "*arr*" media
-> stack with a **selective VPN**: only the piece that must never leak your IP —
-> the torrent client **qBittorrent** — is forced through the **Surfshark VPN**
-> (`sage.final.surfshark`, a gluetun kill-switch gateway). **Sonarr** (TV),
-> **Radarr** (movies), **Prowlarr** (indexer manager) and **Seerr** (request
-> frontend) run on the normal shared network — each can be moved behind the VPN
-> with its `<role>_vpn_container` variable if you want. **Available but not
-> deployed** until hosts are placed in the matching inventory groups. Data lives
+> **Optional — media automation stack (Sonarr · Radarr · Prowlarr · FlareSolverr ·
+> qBittorrent · Seerr, with a Surfshark VPN).** A set of roles add the popular
+> "*arr*" media stack with a **selective VPN**: only the piece that must never
+> leak your IP — the torrent client **qBittorrent** — is forced through the
+> **Surfshark VPN** (`sage.final.surfshark`, a gluetun kill-switch gateway).
+> **Sonarr** (TV), **Radarr** (movies), **Prowlarr** (indexer manager),
+> **FlareSolverr** (Cloudflare challenge solver for protected trackers) and
+> **Seerr** (request frontend) run on the normal shared network — each can be
+> moved behind the VPN with its `<role>_vpn_container` variable if you want.
+> **Available but not deployed** until hosts are placed in the matching inventory
+> groups. Data lives
 > under `/srv/<app>`; the library and downloads land in `/srv/bulk` (not backed
 > up). See Section 3b and the roles' READMEs for setup.
 
@@ -210,10 +212,11 @@ How it works:
 Deploy or update it with the `mysql` tag (Section 10). Its data and secrets live
 under `/srv/mysql`, so the nightly backup covers it like every other app.
 
-### 3b. The optional media automation stack (Sonarr · Radarr · Prowlarr · qBittorrent · Seerr)
+### 3b. The optional media automation stack (Sonarr · Radarr · Prowlarr · FlareSolverr · qBittorrent · Seerr)
 
 This is an **add-on**, deployed only when hosts are placed in the `surfshark`,
-`qbittorrent`, `prowlarr`, `sonarr`, `radarr`, and `seerr` inventory groups. It
+`qbittorrent`, `prowlarr`, `flaresolverr`, `sonarr`, `radarr`, and `seerr`
+inventory groups. It
 runs the popular "*arr*" media stack with a **selective VPN**: only the part
 that genuinely must never leak your IP — the torrent client — is forced through
 the tunnel; everything else runs on the normal shared network.
@@ -223,6 +226,7 @@ the tunnel; everything else runs on the normal shared network.
 | **`surfshark`** | VPN gateway (gluetun): kill switch + DNS | shared `web` | `/srv/surfshark` |
 | **`qbittorrent`** | Torrent download client | **behind the VPN** | `/srv/qbittorrent`; downloads → `/srv/bulk/downloads` |
 | **`prowlarr`** | Indexer manager — syncs indexers to Sonarr/Radarr | shared `web` | `/srv/prowlarr` |
+| **`flaresolverr`** | Solves Cloudflare challenges for protected trackers (used by Prowlarr) | shared `web` | `/srv/flaresolverr` (no persistent state) |
 | **`sonarr`** | Watches for and organises **TV** | shared `web` | `/srv/sonarr`; library `/srv/bulk/media/Shows` |
 | **`radarr`** | Watches for and organises **movies** | shared `web` | `/srv/radarr`; library `/srv/bulk/media/Movies` |
 | **`seerr`** | Request & discovery frontend (sign in with Jellyfin, click "Request") | shared `web` | `/srv/seerr` |
@@ -242,11 +246,26 @@ the tunnel; everything else runs on the normal shared network.
   name to sync indexers; Sonarr/Radarr query indexers back through `prowlarr:9696`.
   [Seerr](https://seerr.dev/) (the successor to Overseerr/Jellyseerr) is the
   front page — it talks to Jellyfin and to Sonarr/Radarr to fulfil requests.
-- **Want a tighter VPN?** Each of `qbittorrent`, `prowlarr`, `sonarr`, `radarr`,
-  `seerr` takes a `<role>_vpn_container` variable. Set it to `surfshark` to route
-  that app through the VPN too (then add its port to `surfshark_input_ports` and
-  point Caddy at `surfshark:<port>`); set it to `""` to run on the shared
-  network. On this host only qBittorrent is tunnelled.
+- **FlareSolverr — same network as Prowlarr.** Some trackers sit behind
+  Cloudflare's "checking your browser" challenge. FlareSolverr is a headless
+  Chromium that solves it and hands Prowlarr a `cf_clearance` cookie. That cookie
+  is **bound to the exit IP**, so FlareSolverr must run on the same network as
+  Prowlarr (here the shared `web` network — both exit via the host's real IP).
+  Add it in Prowlarr → **Settings → Indexers → Add → FlareSolverr** with host
+  `http://flaresolverr:8191`, tag it, and tag the protected indexers. Only
+  Prowlarr talks to it (Sonarr/Radarr query indexers *through* Prowlarr;
+  qBittorrent speaks the BitTorrent protocol and never needs it). For
+  troubleshooting its API is also published on the host's LAN IP at port
+  **8191** (bound to the LAN address, not `0.0.0.0`, since Docker port publishes
+  bypass the firewall) — set `flaresolverr_published_ports: []` to disable.
+- **Want a tighter VPN?** Each of `qbittorrent`, `prowlarr`, `flaresolverr`,
+  `sonarr`, `radarr`, `seerr` takes a `<role>_vpn_container` variable. Set it to
+  `surfshark` to route that app through the VPN too (then add its port to
+  `surfshark_input_ports` and point Caddy at `surfshark:<port>`); set it to `""`
+  to run on the shared network. On this host only qBittorrent is tunnelled. If
+  you tunnel **Prowlarr**, tunnel **FlareSolverr** with it (they must share an
+  exit IP); in that mode FlareSolverr's LAN port is published via the surfshark
+  role instead of `flaresolverr_published_ports`.
 
 **Caddy upstreams** (all `internal_only: true`):
 
@@ -277,8 +296,8 @@ sudo docker exec surfshark   wget -qO- https://ipinfo.io/ip   # a Surfshark IP, 
 sudo docker exec qbittorrent wget -qO- https://ipinfo.io/ip   # must MATCH surfshark (proves it's tunnelled)
 ```
 
-Deploy or update with the `surfshark`, `qbittorrent`, `prowlarr`, `sonarr`,
-`radarr`, and `seerr` tags (Section 10).
+Deploy or update with the `surfshark`, `qbittorrent`, `prowlarr`, `flaresolverr`,
+`sonarr`, `radarr`, and `seerr` tags (Section 10).
 
 ---
 
@@ -555,13 +574,13 @@ ansible-navigator run site.yml --tags hardening
 Available tags: `update`, `hardening`, `wireguard_client`, `cockpit`, `caddy`,
 `pelican`, `pelican_wings`, `pterodactyl`, `wings`, `mysql`, `disk_os`,
 `disk_stripe`, `disk_pool`, `storage`, `surfshark`, `qbittorrent`, `prowlarr`,
-`sonarr`, `radarr`, `seerr`, `wordpress`, `dashy`, `glance`, `bracket`,
+`flaresolverr`, `sonarr`, `radarr`, `seerr`, `wordpress`, `dashy`, `glance`, `bracket`,
 `jellyfin`, `portainer`, `healthchecks`, `borg`. The `storage` tag runs all
 three disk roles together (root LV, game-server stripe, media pool). Add
 `--skip-tags update` to skip
 the OS upgrade. The `mysql` play (the optional game-server database host, Section
-3a) and the `surfshark` / `qbittorrent` / `prowlarr` / `sonarr` / `radarr` /
-`seerr` plays (the optional media stack, Section 3b) are dormant — they do
+3a) and the `surfshark` / `qbittorrent` / `prowlarr` / `flaresolverr` / `sonarr` /
+`radarr` / `seerr` plays (the optional media stack, Section 3b) are dormant — they do
 nothing unless a host is placed in their groups. This server runs **Pelican** (tags
 `pelican` and `pelican_wings`); the `pterodactyl` / `wings` plays are dormant —
 they do nothing unless a host is placed in the `pterodactyl_panel` /

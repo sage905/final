@@ -18,6 +18,7 @@
 #   ansible-navigator run site.yml --tags seerr
 #   ansible-navigator run site.yml --tags qbittorrent
 #   ansible-navigator run site.yml --tags prowlarr
+#   ansible-navigator run site.yml --tags flaresolverr
 #   ansible-navigator run site.yml --tags wordpress
 #   ansible-navigator run site.yml --tags dashy
 #   ansible-navigator run site.yml --tags glance
@@ -101,6 +102,7 @@
     - seerr
     - qbittorrent
     - prowlarr
+    - flaresolverr
     - wordpress
     - pelican_wings
     - pterodactyl_wings
@@ -284,6 +286,21 @@
     - prowlarr
   roles:
     - role: sage.final.prowlarr
+
+# FlareSolverr — a headless-browser proxy that solves Cloudflare challenges so
+# Prowlarr can reach Cloudflare-protected trackers. Runs on the shared `web`
+# network alongside Prowlarr (Prowlarr reaches it at flaresolverr:8191); it must
+# share Prowlarr's network so the IP-bound cf_clearance cookie matches the IP
+# Prowlarr queries from. Its API is also published on the host LAN for
+# troubleshooting. Dormant until a host is placed in the `flaresolverr` group.
+- name: Deploy FlareSolverr (Cloudflare solver)
+  hosts: flaresolverr
+  become: true
+  gather_facts: true
+  tags:
+    - flaresolverr
+  roles:
+    - role: sage.final.flaresolverr
 
 - name: Deploy WordPress
   hosts: wordpress

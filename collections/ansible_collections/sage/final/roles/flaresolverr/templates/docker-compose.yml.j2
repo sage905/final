@@ -1,0 +1,40 @@
+---
+# {{ ansible_managed }}
+name: flaresolverr
+
+services:
+  flaresolverr:
+    image: {{ flaresolverr_image }}
+    container_name: {{ flaresolverr_container_name }}
+    restart: always
+{% if flaresolverr_vpn_container | length > 0 %}
+    # Join the VPN gateway's network namespace so the Cloudflare challenge is
+    # solved from the SAME exit IP Prowlarr/Sonarr/Radarr query from (the
+    # cf_clearance cookie is IP-bound). Reached over loopback by the apps in this
+    # namespace at http://localhost:{{ flaresolverr_port }} — no `ports:` and no
+    # surfshark_input_ports entry required.
+    network_mode: "container:{{ flaresolverr_vpn_container }}"
+{% endif %}
+    environment:
+      LOG_LEVEL: "{{ flaresolverr_log_level }}"
+      TZ: "{{ flaresolverr_timezone }}"
+{% if flaresolverr_vpn_container | length == 0 %}
+{% if flaresolverr_published_ports | length > 0 %}
+    # Optional LAN exposure for troubleshooting (e.g. browse to the index page
+    # or POST to /v1 from a workstation). Bind to a specific host/LAN IP rather
+    # than 0.0.0.0 to keep it off any WAN interface.
+    ports:
+{% for p in flaresolverr_published_ports %}
+      - "{{ p }}"
+{% endfor %}
+{% endif %}
+    # No VPN: FlareSolverr runs on the shared network with its own address,
+    # reached at "{{ flaresolverr_container_name }}:{{ flaresolverr_port }}".
+    networks:
+      - shared
+
+networks:
+  shared:
+    name: {{ flaresolverr_shared_network }}
+    external: true
+{% endif %}

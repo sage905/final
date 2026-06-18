@@ -1,0 +1,66 @@
+---
+# On the shared network (flaresolverr_vpn_container empty): just ensure it exists.
+- name: Ensure the shared Docker network exists
+  ansible.builtin.command:
+    cmd: "docker network create {{ flaresolverr_shared_network }}"
+  register: flaresolverr_network_result
+  changed_when: flaresolverr_network_result.rc == 0
+  failed_when:
+    - flaresolverr_network_result.rc != 0
+    - "'already exists' not in flaresolverr_network_result.stderr"
+  when: flaresolverr_vpn_container | length == 0
+
+# Behind the VPN: FlareSolverr has no network of its own — it joins the VPN
+# container's namespace. So that container must exist and be running first.
+- name: Get the VPN gateway container state
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Running{{ "}}" }}'
+      {{ flaresolverr_vpn_container }}
+  register: flaresolverr_vpn_state
+  changed_when: false
+  failed_when: false
+  when: flaresolverr_vpn_container | length > 0
+
+- name: Assert the VPN gateway is running
+  ansible.builtin.assert:
+    that:
+      - flaresolverr_vpn_state.stdout == 'true'
+    fail_msg: >-
+      The VPN container '{{ flaresolverr_vpn_container }}' is not running. Deploy
+      sage.final.surfshark first (e.g. --tags surfshark) — FlareSolverr must
+      solve Cloudflare challenges from the tunnel's exit IP and cannot start
+      without it.
+  when: flaresolverr_vpn_container | length > 0
+
+- name: Bring up the FlareSolverr stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --remove-orphans
+    chdir: "{{ flaresolverr_data_dir }}"
+  register: flaresolverr_compose_result
+  changed_when: "'Creating' in flaresolverr_compose_result.stdout
+                 or 'Recreating' in flaresolverr_compose_result.stdout
+                 or 'Started' in flaresolverr_compose_result.stderr"
+
+# If the VPN container was recreated since FlareSolverr last started, it is now
+# bound to a network namespace that no longer exists and is stuck restarting.
+# `up -d` won't fix that, so force-recreate it to rejoin the current VPN
+# namespace. (Only relevant when routed through the VPN.)
+- name: Check the FlareSolverr container status
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect -f '{{ "{{" }}.State.Status{{ "}}" }}'
+      {{ flaresolverr_container_name }}
+  register: flaresolverr_status
+  changed_when: false
+  failed_when: false
+  when: flaresolverr_vpn_container | length > 0
+
+- name: Re-attach FlareSolverr to the current VPN namespace
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ flaresolverr_data_dir }}"
+  when:
+    - flaresolverr_vpn_container | length > 0
+    - flaresolverr_status.stdout != 'running'
+  changed_when: true

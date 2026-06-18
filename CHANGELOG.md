@@ -41,6 +41,17 @@ project is not yet versioned, so entries are grouped under **Unreleased**.
     Sonarr/Radarr and reads the Jellyfin library. Runs on the shared `web`
     network by default (it's a frontend, not a downloader); `seerr_vpn_container`
     optionally routes it through the VPN too.
+- **FlareSolverr role** (`sage.final.flaresolverr`) — runs FlareSolverr (a
+  headless-Chromium Cloudflare challenge solver) so Prowlarr can reach trackers
+  behind Cloudflare's "checking your browser" interstitial. Runs on the shared
+  `web` network alongside Prowlarr by default (the `cf_clearance` cookie is
+  IP-bound, so it must share Prowlarr's exit IP); add it in Prowlarr at
+  `http://flaresolverr:8191` and tag the protected indexers. Its API is also
+  published on the host's LAN IP (port 8191) for troubleshooting
+  (`flaresolverr_published_ports`, bound to the LAN address — set `[]` to
+  disable). Routes through the VPN instead when `flaresolverr_vpn_container` is
+  set to match a tunnelled Prowlarr. Wired into `site.yml` under the
+  `flaresolverr` tag/host group.
 - **MySQL database-host role** (`sage.final.mysql`) — runs a dedicated MariaDB
   container as a Docker Compose stack to serve as the panel's "Database Host",
   provisioning a database per game server. Creates a global-privilege `panel`

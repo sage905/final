@@ -1,0 +1,6 @@
+---
+- name: Recreate flaresolverr stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
+    chdir: "{{ flaresolverr_data_dir }}"
+  changed_when: true

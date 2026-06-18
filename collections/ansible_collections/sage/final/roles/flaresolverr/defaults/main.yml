@@ -1,0 +1,57 @@
+---
+# --- Stack location -----------------------------------------------------------
+# Root directory on the host holding the compose project. FlareSolverr keeps no
+# persistent state (it spawns a throwaway browser per request), so there is no
+# /config mount — only the compose file lives here.
+flaresolverr_data_dir: /srv/flaresolverr
+
+# --- Image --------------------------------------------------------------------
+flaresolverr_image: ghcr.io/flaresolverr/flaresolverr:latest
+flaresolverr_container_name: flaresolverr
+
+# Port FlareSolverr's API listens on. Prowlarr reaches it by container name at
+# http://{{ flaresolverr_container_name }}:{{ flaresolverr_port }} on the shared
+# network. Also published on the host LAN by flaresolverr_published_ports for
+# troubleshooting (see below).
+flaresolverr_port: 8191
+
+# --- Network routing ----------------------------------------------------------
+# FlareSolverr MUST run on the same network as Prowlarr, because the cf_clearance
+# cookie Cloudflare issues is bound to the exit IP: the challenge has to be
+# solved from the same IP Prowlarr queries the tracker from, or the cookie is
+# rejected. On this host Prowlarr runs on the shared `web` network (only
+# qBittorrent is tunnelled), so FlareSolverr defaults to the shared network too —
+# both exit via the host's real IP, which matches. If you instead route Prowlarr
+# through the VPN (prowlarr_vpn_container: surfshark), set this to "surfshark" as
+# well so they share the tunnel's exit IP, and publish 8191 via the surfshark
+# role rather than flaresolverr_published_ports.
+flaresolverr_vpn_container: ""
+flaresolverr_shared_network: web
+
+# Optional host port mappings for LAN troubleshooting access (browse the index
+# page or POST to /v1 from a workstation). On by default, bound to the host's
+# primary LAN address rather than 0.0.0.0 because Docker's published ports bypass
+# the host firewall — don't expose the solver on a WAN interface. Set to [] to
+# disable. Only honoured on the shared network; behind the VPN, publish via the
+# surfshark role instead (the role asserts if this is set in that mode).
+flaresolverr_published_ports:
+  - "{{ ansible_default_ipv4.address }}:{{ flaresolverr_port }}:{{ flaresolverr_port }}"
+
+# --- Runtime tuning -----------------------------------------------------------
+# FlareSolverr log verbosity (debug | info | warning | error).
+flaresolverr_log_level: info
+flaresolverr_timezone: UTC
+
+# --- Container runtime install ------------------------------------------------
+# Docker is installed once per host by the dedicated play in site.yml. Leave
+# this false; set true only to install Docker from this role on a standalone run.
+flaresolverr_install_docker: false
+
+# Rootful: stack runs via system Docker. flaresolverr_user owns the compose file
+# on disk.
+flaresolverr_user: root
+
+# Group that owns the stack's files on the host. Admins in
+# flaresolverr_group_members can read/write {{ flaresolverr_data_dir }} via SFTP.
+flaresolverr_group: flaresolverr
+flaresolverr_group_members: []

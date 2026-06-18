@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  role_name: flaresolverr
+  namespace: sage
+  author: Sage
+  description: >-
+    Run FlareSolverr (Cloudflare challenge solver) alongside Prowlarr on the
+    shared media network, so the *arr stack can reach trackers behind Cloudflare.
+  license: BSD-2-Clause
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - flaresolverr
+    - cloudflare
+    - indexer
+    - media
+    - vpn
+    - docker
+    - compose
+dependencies: []
