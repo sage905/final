@@ -40,6 +40,7 @@ services:
     extra_hosts:
       - "host.containers.internal:host-gateway"
       - "host.docker.internal:host-gateway"
+      - "{{ pelican_panel_fqdn }}:host-gateway"
     networks:
       - shared
 
